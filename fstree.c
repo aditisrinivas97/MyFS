@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <string.h>
 
 /*
@@ -36,7 +33,9 @@ char * extract_path(char ** copy_path){
     temp = **(copy_path);
     while(temp != '\0'){    
         if(temp == '/'){
-            (*copy_path)++;
+            if(strlen(*copy_path) > 1){
+                (*copy_path)++;
+            }
             break;
         }
         tempstr = (char *)malloc(sizeof(char) * (retlen + 1));
@@ -49,7 +48,26 @@ char * extract_path(char ** copy_path){
         temp = **(copy_path);
         free(tempstr);
     }
+    retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
+    retval[retlen] = '\0';
+    printf("PATH : %s\n", retval);
     return retval;
+}
+
+// Add null character to strings through a single pointer
+char * fix_string(char * str){
+    printf("%s\n", str);
+    int len = strlen(str);
+    str = (char *)realloc(str, sizeof(char) * (len + 1));
+    str[len] = '\0';
+    return str;
+}
+
+// Add null character to strings through double pointer
+void fix_string_d(char ** str){
+    int len = strlen(*str);
+    *str = (char *)realloc(*str, sizeof(char) * (len + 1));
+    *str[len] = '\0';
 }
 
 /* General purpose function to reverse the content of a string. Mode signifies use for dropping extra '/' in directory.
@@ -58,12 +76,13 @@ E.g "/a/d/" should produce current dir as 'd' and not '/' */
 char * reverse(char * str, int mode){
     int i;
     int len = strlen(str);
-    char * retval = (char *)malloc(sizeof(char) * len);
+    printf("REVERSE : %s %d\n", str, len);
+    char * retval = (char *)calloc(sizeof(char), (len + 1));
     for(i = 0; i <= len/2; i++){
         retval[i] = str[len - 1 -i];
         retval[len - i - 1] = str[i];
     }
-    if(retval[0] == '/' && mode){   // if mode is set to 1, then drop the leading '/'. Set to 0 for normal reversing.
+    if(retval[0] == '/' && mode == 1){   // if mode is set to 1, then drop the leading '/'. Set to 0 for normal reversing.
         retval++;
     }
     return retval;
@@ -76,6 +95,7 @@ char * extract_dir(char ** copy_path){
     char temp;
     char * tempstr;
     *copy_path = reverse(*copy_path, 1);    // change "a/b/c" to "c/b/a" and extract content upto the first '/'
+    printf("BEGIN EXTRACT : %s\n", *copy_path);
     temp = **(copy_path);
     while(temp != '/'){    
         tempstr = (char *)malloc(sizeof(char) * (retlen + 1));
@@ -88,9 +108,17 @@ char * extract_dir(char ** copy_path){
         temp = **(copy_path);
         free(tempstr);
     }
-    (*copy_path)++;                     // remove the leading '/' from "/b/a" after extracting 'c'
+    if(strlen(*copy_path) > 1){
+        (*copy_path)++;                     // remove the leading '/' from "/b/a" after extracting 'c'
+    }
+    retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
+    retval[retlen] = '\0';
     retval = reverse(retval, 0);        // reverse the content of the return value. E.g if dir was abc, retval would be cba and would need to be reversed.
-    *copy_path = reverse(*copy_path, 0);    // reverse the orginial path
+    //retval = fix_string(retval);
+    *(copy_path) = reverse(*(copy_path), 0);    // reverse the orginial path
+    printf("done reversing\n");
+    //fix_string_d(copy_path);
+    printf("END OF EXTRACT : %s %s\n", *copy_path, retval);
     return retval;
 }
 
@@ -100,6 +128,10 @@ FStree * search_node(char * path){
     FStree * retval = NULL;
     char * curr_node = NULL;
     int flag = 0, i = 0;
+    if(path[0] == '/'){
+        path++;
+        printf("THIS %s\n",path);
+    }
     while(temp != NULL){
         curr_node = extract_path(&path);
         if(strlen(curr_node) == 0){
@@ -141,11 +173,12 @@ void insert_node(const char * path){
         return;
     }
     else{
+        printf("%s\n", path);
         char * copy_path = (char *)path;
         char * dir = extract_dir(&copy_path);
         FStree * dir_node = NULL;
-        copy_path++;
-        if(strlen(copy_path) == 0){     // if the new directory belongs to the root node
+        printf("%s %s\n", copy_path, dir);
+        if(strlen(copy_path) == 1){     // if the new directory belongs to the root node
             root->num_children++;
             if(root->children == NULL){
                 root->children = (FStree **)malloc(sizeof(FStree *));
@@ -181,8 +214,7 @@ void delete_node(const char * path){
         char * copy_path = (char *)path;
         FStree * dir_node = NULL;
         int i, j;
-        copy_path++;
-        if(strlen(copy_path) == 0){
+        if(strlen(copy_path) == 1){
             printf("Cannot delete root directory!\n");  // do not allow deletion of root directory
             return;
         }
@@ -216,23 +248,13 @@ void delete_node(const char * path){
     return;
 }
 
-// For testing purposes only
-int main(void){
+//For testing purposes only
+/*int main(void){
     char * path = "/";
     insert_node(path);
-    char * newpath = "/a";
+    char * newpath = "/1";
     insert_node(newpath);
-    char * newpath1 = "/a/b";
-    insert_node(newpath1);
-    char * newpath2 = "/a/b/c";
-    insert_node(newpath2);
-    char * newpath3 = "/a/b/d";
-    insert_node(newpath3);
-    char * newpath4 = "/a/b/e";
-    insert_node(newpath4);
-    FStree * node = search_node("a/b/d");
-    delete_node("/");
-    node = search_node("a/b/d");
+    FStree * node = search_node("/1");
     if(node == NULL){
         printf("failed! No such directory!\n");
     }
@@ -244,4 +266,5 @@ int main(void){
         printf("node parent : %s \n", node->parent->name);
     }
     return 0;
-}
+   
+}*/
