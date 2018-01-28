@@ -54,22 +54,6 @@ char * extract_path(char ** copy_path){
     return retval;
 }
 
-// Add null character to strings through a single pointer
-char * fix_string(char * str){
-    printf("%s\n", str);
-    int len = strlen(str);
-    str = (char *)realloc(str, sizeof(char) * (len + 1));
-    str[len] = '\0';
-    return str;
-}
-
-// Add null character to strings through double pointer
-void fix_string_d(char ** str){
-    int len = strlen(*str);
-    *str = (char *)realloc(*str, sizeof(char) * (len + 1));
-    *str[len] = '\0';
-}
-
 /* General purpose function to reverse the content of a string. Mode signifies use for dropping extra '/' in directory.
 E.g "/a/d/" should produce current dir as 'd' and not '/' */
 
@@ -114,10 +98,8 @@ char * extract_dir(char ** copy_path){
     retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
     retval[retlen] = '\0';
     retval = reverse(retval, 0);        // reverse the content of the return value. E.g if dir was abc, retval would be cba and would need to be reversed.
-    //retval = fix_string(retval);
     *(copy_path) = reverse(*(copy_path), 0);    // reverse the orginial path
     printf("done reversing\n");
-    //fix_string_d(copy_path);
     printf("END OF EXTRACT : %s %s\n", *copy_path, retval);
     return retval;
 }
@@ -130,7 +112,7 @@ FStree * search_node(char * path){
     int flag = 0, i = 0;
     if(path[0] == '/'){
         path++;
-        printf("THIS %s\n",path);
+        printf("SEARCH %s\n",path);
     }
     while(temp != NULL){
         curr_node = extract_path(&path);
