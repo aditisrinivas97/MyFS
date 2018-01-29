@@ -1,29 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <time.h>
 /*
     This file contains all the functions necessary to support an in memory FS tree.
 */
-
+struct FSfile{
+	char * path;
+	char * name;
+	char * data;
+	long int offset;
+	long int size;
+	time_t c_time;
+};
 struct FStree{
     char * path;                // Path upto node
     char * name;                // Name of the file / directory
     char * type;                // Type : "directory" or "file"
+    char * permissions;		// Default Permissions for dir 777 and file is 666
     int num_children;           // Number of children nodes
+    int num_files;		// Number of files
     struct FStree * parent;     // Pointer to parent node
     struct FStree ** children;  // Pointers to children nodes
-    //struct FSfile ** fchildren; // Pointers to files in the directory - To be implemented
+    struct FSfile ** fchildren; // Pointers to files in the directory
 };
 
 //struct FSfile{};
 
 typedef struct FStree FStree;  
 
-//typedef struct FSfile FSfile;
+typedef struct FSfile FSfile;
 
 FStree * root = NULL;       // root of the FS tree
 
+time_t t;
 // Function to extract next directory in a given path. E.g "a/b/c" returns "a" and changes the input string to "b/c"
 char * extract_path(char ** copy_path){
     char * retval = (char *)calloc(sizeof(char), 1);
@@ -137,21 +147,29 @@ FStree * search_node(char * path){
 }
 
 // Function to initialise an FS tree node
-FStree * init_node(const char * path, char * name, FStree * parent){
+FStree * init_node(const char * path, char * name, FStree * parent,int type){
     FStree * new = (FStree *)malloc(sizeof(FStree));
     new->path = (char *)path;
     new->name = name;
-    new->type = "directory";       // no support for files yet
+    if(type==1){
+    	new->type = "directory";  
+        new->permissions ="777";
+    }     
+    if(type==0){
+	new->type = "file"; 
+    	new->permissions = "666"; 
+    }    
     new->num_children = 0;
     new->parent = parent;
     new->children = NULL;
+    new->num_files=0;
     return new;
 }
 
 // Function to insert a node into the FS tree
 void insert_node(const char * path){
     if(root == NULL){
-        root = init_node("/", "root", NULL);
+        root = init_node("/", "root", NULL,1);
         return;
     }
     else{
@@ -164,11 +182,11 @@ void insert_node(const char * path){
             root->num_children++;
             if(root->children == NULL){
                 root->children = (FStree **)malloc(sizeof(FStree *));
-                root->children[0] = init_node(path, dir, root);
+                root->children[0] = init_node(path, dir, root,1);
             }
             else{
                 root->children = (FStree **)realloc(root->children, sizeof(FStree *) * root->num_children);
-                root->children[root->num_children - 1] = init_node(path, dir, root);
+                root->children[root->num_children - 1] = init_node(path, dir, root,1);
             }
         }
         else{
@@ -176,7 +194,7 @@ void insert_node(const char * path){
             if(dir_node != NULL){
                 dir_node->num_children++;
                 dir_node->children = (FStree **)realloc(dir_node->children, sizeof(FStree *) * dir_node->num_children);
-                dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node);
+                dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node,1);
             }
             else{
                 printf("No such file or directory in the given path!\n");
@@ -211,7 +229,7 @@ void delete_node(const char * path){
             for(i = 0; i < dir_node->parent->num_children; i++){
                 if(dir_node->parent->children[i] == dir_node){
                     for(j = i + 1; j < dir_node->parent->num_children - 1; j++){
-                        dir_node->parent->children[i] = dir_node->parent->children[i + 1];
+                        dir_node->parent->children[j-1] = dir_node->parent->children[j];
                     }
                     break;
                 }
@@ -229,14 +247,178 @@ void delete_node(const char * path){
     }
     return;
 }
+FSfile * init_file(const char * path,char * name){
+	FSfile * new = (FSfile *)malloc(sizeof(FSfile));
+	new->path = (char *)path;
+	new->name = name;
+	new->data=NULL;
+	new->size=0;
+	new->offset=0;
+	new->c_time=time(&t);
+	return new;
+}
 
-//For testing purposes only
+void insert_file(const char * path){
+	char * copy_path = (char *)path;
+        char * name = extract_dir(&copy_path);
+	copy_path++;
+        if(strlen(copy_path) == 0){ // for files in root
+		//printf("filename is :%s and parent directory is root\n",name);
+		root->num_children++;
+            	if(root->children == NULL){ // if root has no sub-dir or files
+                	root->children = (FStree **)malloc(sizeof(FStree *));
+                	root->children[0] = init_node(path, name, root,0);
+            	}
+            	else{ 
+                	root->children = (FStree **)realloc(root->children, sizeof(FStree *) * root->num_children);
+                	root->children[root->num_children - 1] = init_node(path, name, root,0);
+            	}
+		if(root->fchildren==NULL){
+			root->num_files++;
+			root->fchildren= (FSfile **)malloc(sizeof(FSfile *));
+			root->fchildren[0]=init_file(path,name);
+		}
+		else{
+			root->num_files++;
+			root->fchildren=(FSfile **)realloc(root->fchildren, sizeof(FSfile *) * root->num_files);
+			root->fchildren[root->num_files - 1]=init_file(path,name);
+		}
+	}
+	else{
+		char * rpath = reverse(reverse(copy_path,0),1);
+		FStree * parent_dir_node = search_node(rpath);
+		//printf("filename is :%s and parent directory is:%s\n",name,parent_dir_node->name);
+		if(parent_dir_node != NULL){
+		        parent_dir_node->num_children++;
+		        parent_dir_node->children = (FStree **)realloc(parent_dir_node->children, sizeof(FStree *) * parent_dir_node->num_children);
+		        parent_dir_node->children[parent_dir_node->num_children - 1] = init_node(path, name, parent_dir_node,0);
+			if(parent_dir_node->fchildren==NULL){
+				parent_dir_node->num_files++;
+				parent_dir_node->fchildren= (FSfile **)malloc(sizeof(FSfile*));
+				parent_dir_node->fchildren[0]=init_file(path,name);
+			}
+			else{
+				parent_dir_node->num_files++;
+				parent_dir_node->fchildren=(FSfile **)realloc(parent_dir_node->fchildren, sizeof(FSfile *) * parent_dir_node->num_files);
+				parent_dir_node->fchildren[parent_dir_node->num_files -1]=init_file(path,name);
+			}
+            	}
+            	else{
+                	printf("No such file or directory in the given path!\n");
+		}
+	}
+}
+void find_files(char * path){
+	int i;
+	printf("\nIn the directory %s files are:\n",path);
+	if(strcmp("/",path)==0)
+	{
+		for(i=0;i<root->num_files;i++)
+		{
+			printf("File name:%s\n",(root->fchildren)[i]->name);
+		}
+		
+	}
+	else{
+		char * rpath = reverse(reverse(path,0),1);
+		FStree * parent_dir= search_node(rpath);
+		if(parent_dir!=NULL){
+			for(i=0;i<parent_dir->num_files;i++)
+			{
+			printf("\nFile name:%s\n",(parent_dir->fchildren)[i]->name);
+			}
+		}
+		else
+			printf("Wrong file");
+	}
+}
+void delete_file(const char *path)
+{
+	if(root == NULL){
+        	return;
+	}
+	else{	
+		int i,j;
+		FStree * parent_dir_node;
+		
+		char * copy_path = (char *)path;
+		char * name = extract_dir(&copy_path);
+		copy_path++;
+       		if(strlen(copy_path) == 0){
+			parent_dir_node=root;
+		}
+		else{
+			
+			char * rpath = reverse(reverse(copy_path,0),1);
+			parent_dir_node = search_node(rpath);
+		}
+		for(i=0;i<parent_dir_node->num_children;i++){
+			if(strcmp(parent_dir_node->children[i]->name,name)==0){
+				
+				for(j = i + 1; j <=parent_dir_node->num_children - 1; j++){
+                        		parent_dir_node->children[j-1] = parent_dir_node->children[j];
+                    		}
+                    		break;
+                	}
+		}
+		
+		parent_dir_node->num_children--;
+		if(parent_dir_node->num_children == 0){
+                	parent_dir_node->children = NULL;
+            	}
+            else{
+                	parent_dir_node->children = (FStree **)realloc(parent_dir_node->children,sizeof(FStree *) * parent_dir_node->num_children);
+            	}
+		for(i=0;i<parent_dir_node->num_files;i++){
+			if(strcmp(parent_dir_node->fchildren[i]->name,name)==0){
+				
+				for(j=i+1;j<=parent_dir_node->num_files-1;j++){
+					parent_dir_node->fchildren[j-1]=parent_dir_node->fchildren[j];
+				}
+				break;
+			}
+		}
+		parent_dir_node->num_files--;
+		if(parent_dir_node->num_files == 0){
+                	parent_dir_node->fchildren = NULL;
+            	}
+            	else{
+                	parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
+            	}
+		
+		printf("\nFile %s deleted",name);
+		free(parent_dir_node);
+            }
+}		
+// For testing purposes only
 /*int main(void){
     char * path = "/";
     insert_node(path);
-    char * newpath = "/1";
+    char * newpath = "/a";
     insert_node(newpath);
-    FStree * node = search_node("/1");
+    char * newpath1 = "/a/b";
+    insert_node(newpath1);
+    char * newpath2 = "/a/b/c";
+    insert_node(newpath2);
+    char * newpath3 = "/a/b/d";
+    insert_node(newpath3);
+    char * newpath4 = "/a/b/e";
+    insert_node(newpath4);
+    char * newpath_file1="/a/b/c/file1.txt";
+    insert_file(newpath_file1);
+    char * newpath_file2="/a/b/c/file2.txt";
+    insert_file(newpath_file2);
+    char * newpath_file6="/a/b/c/file3.txt";
+    insert_file(newpath_file6);
+    char * newpath_file3="/file3.txt";
+    insert_file(newpath_file3);
+    char * newpath_file4="/file4.txt";
+    insert_file(newpath_file4);
+    char * newpath_file5="/file5.txt";
+    insert_file(newpath_file5);
+    FStree * node = search_node("a/b/file.txt");
+    delete_node("/");
+    node = search_node("a/b");
     if(node == NULL){
         printf("failed! No such directory!\n");
     }
@@ -246,7 +428,12 @@ void delete_node(const char * path){
         printf("node path : %s \n", node->path);
         printf("node type : %s \n", node->type);
         printf("node parent : %s \n", node->parent->name);
+	printf("no of children : %d \n", node->num_children);
     }
+    find_files("/");
+    delete_file("/file4.txt");
+    printf("\nAfter deleting:");
+    find_files("/");
     return 0;
-   
-}*/
+}
+*/
