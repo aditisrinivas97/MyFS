@@ -162,7 +162,7 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
         new->permissions =S_IFDIR | 0755;
     }     
     if(type==0){
-	new->type = "file"; 
+	    new->type = "file"; 
     	new->permissions = S_IFREG | 0644; 
     }    
     new->group_id = getgid();
@@ -264,7 +264,7 @@ FSfile * init_file(const char * path,char * name){
 	FSfile * new = (FSfile *)malloc(sizeof(FSfile));
 	new->path = (char *)path;
 	new->name = name;
-	new->data = "";
+	new->data = (char *)calloc(sizeof(char), 1);
 	new->size=0;
 	new->offset=0;
 	//new->c_time=time(&t);

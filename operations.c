@@ -94,48 +94,50 @@ static int do_create(const char * path, mode_t x,struct fuse_file_info *fi){
 
 static int do_open(const char *path, struct fuse_file_info *fi) {
 	printf("\n[open called]\n");
-  return 0;
+  	return 0;
 }
 
-static int do_read(const char *path, char *buf, size_t size, off_t offset,
-    struct fuse_file_info *fi) {
+int do_unlink(const char * path){
+	printf("\n[unlink called]\n");
+	delete_file(path);
+	return 0;
+}
+
+static int do_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_file_info *fi) {
 	printf("\n[read called]\n");
 	size_t len;
 	FStree * my_file_tree_node;
 	FSfile * my_file;
 	char * filecontent;
 	my_file = find_file(path);
-	uid_t u=getuid();
-	gid_t g=getgid();
+	uid_t u = getuid();
+	gid_t g = getgid();
 	mode_t p;
 	int per_flag=0;
-	if(my_file!=NULL){
+	if(my_file != NULL){
 		my_file_tree_node = search_node((char *)path);
 		p = my_file_tree_node->permissions;
-		if(u==my_file_tree_node->user_id)
-		{
+		if(u == my_file_tree_node->user_id){
 			p = p & S_IRUSR;
-			if(p==0400)
-				per_flag=1;
+			if(p == 0400)
+				per_flag = 1;
 		}
-		else if(g==my_file_tree_node->group_id)
-		{
+		else if(g == my_file_tree_node->group_id){
 			p = p & S_IRGRP;
-			if(p==040)
-				per_flag=1;
+			if(p == 040)
+				per_flag = 1;
 		}
-		else
-		{
+		else{
 			p = p & S_IROTH;
-			if(p==04)
-				per_flag=1;
+			if(p == 04)
+				per_flag = 1;
 		}
 		if(per_flag){	
-			my_file_tree_node->a_time=time(NULL);
-			len=strlen(my_file->data);
-			if(len==0)
+			my_file_tree_node->a_time = time(NULL);
+			len = strlen(my_file->data);
+			if(len == 0)
 				return 0;
-			memcpy(buf, my_file->data + offset, size);
+			memcpy(buf, my_file->data, size);
 			printf("\n read char are :%s and len is :%d\n",buf,(int)strlen(buf));
 			return size;
 		}
@@ -145,63 +147,60 @@ static int do_read(const char *path, char *buf, size_t size, off_t offset,
 	return -ENOENT;
 }
 
-static int do_chmod(const char *path, mode_t new)
-{	printf("\n[chmod called]\n");
+static int do_chmod(const char *path, mode_t new){	
+	printf("\n[chmod called]\n");
 	FStree * current;
-	current=search_node((char *)path);
-	if(current!=NULL)
-	{
-		current->permissions=new;
+	current = search_node((char *)path);
+	if(current != NULL){
+		current->permissions = new;
 		return 0;
 	}
 	return -ENOENT;
 }
-static int do_write(const char *path, char *buf, size_t size, off_t offset,
-    struct fuse_file_info *fi) {
+
+int do_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
 	printf("\n[Write called]\n");
 	int len;
 	FStree * my_file_tree_node;
 	FSfile * my_file;
 	my_file = find_file(path);
-	uid_t u=getuid();
-	gid_t g=getgid();
+	uid_t u = getuid();
+	gid_t g = getgid();
 	mode_t p;
 	int per_flag=0;
-	if(my_file!=NULL){
+	if(my_file != NULL){
 		my_file_tree_node = search_node((char *)path);
 		p = my_file_tree_node->permissions;
-		if(u==my_file_tree_node->user_id)
-		{
+		if(u == my_file_tree_node->user_id){
 			p = p & S_IWUSR;
-			if(p==0200)
+			if(p == 0200)
 				per_flag=1;
 		}
-		else if(g==my_file_tree_node->group_id)
-		{
+		else if(g == my_file_tree_node->group_id){
 			p = p & S_IWGRP;
-			if(p==020)
+			if(p == 020)
 				per_flag=1;
 		}
-		else
-		{
+		else{
 			p = p & S_IWOTH;
-			if(p==02)
+			if(p == 02)
 				per_flag=1;
 		}
 		if(per_flag){	
-			my_file_tree_node->m_time=time(NULL);
-			my_file_tree_node->a_time=time(NULL);
-			len=strlen(buf);
-			my_file->data = (char *)realloc(my_file, sizeof(char) * len);
-			my_file->size=len;
-			memcpy(my_file->data,buf, size);
-			my_file_tree_node->size = len;
+			my_file_tree_node->m_time = time(NULL);
+			my_file_tree_node->a_time = time(NULL);
+			my_file->data = (char *)realloc(my_file->data, sizeof(char) * (size + offset + 1));
+			my_file->size = size + offset;
+			memset((my_file->data) + offset, 0, size);
+			memcpy((my_file->data) + offset, buf, size);
+			my_file_tree_node->size = size + offset;
 			printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
 			printf("content is : %s and len is:%d\n", my_file->data,(int)strlen(my_file->data));
 			return size;
 		}
-		else
+		else{
 			return -EACCES;
+		}
 	}
 	return -ENOENT;
 }
@@ -210,15 +209,16 @@ static int do_utime(){
 }
 static struct fuse_operations operations = {
     .getattr	= do_getattr,
+	.readdir	= do_readdir,
     .mkdir      = do_mkdir,
     .rmdir      = do_rmdir,
+	.create		= do_create,
     .open       = do_open,
-    .read	= do_read,
-    .chmod	= do_chmod,
-    .create	= do_create,
-    .utimens	= do_utime,
-    .readdir	= do_readdir,
-    .write	= do_write,
+    .read		= do_read,
+	.unlink     = do_unlink,
+    .chmod		= do_chmod,
+    .write		= do_write,
+	.utimens	= do_utime,
 };
 
 int main( int argc, char *argv[] ){
