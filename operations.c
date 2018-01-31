@@ -145,6 +145,56 @@ static int do_read(const char *path, char *buf, size_t size, off_t offset,
 	return -ENOENT;
 }
 
+static int do_write(const char *path, char *buf, size_t size, off_t offset,
+    struct fuse_file_info *fi) {
+	printf("\n*******Write is called*******\n");
+	int len;
+	FStree * my_file_tree_node;
+	FSfile * my_file;
+	my_file = find_file(path);
+	uid_t u=getuid();
+	gid_t g=getgid();
+	mode_t p;
+	int per_flag=0;
+	if(my_file!=NULL){
+		my_file_tree_node = search_node((char *)path);
+		p = my_file_tree_node->permissions;
+		if(u==my_file_tree_node->user_id)
+		{
+			p = p & S_IWUSR;
+			if(p==0200)
+				per_flag=1;
+		}
+		else if(g==my_file_tree_node->group_id)
+		{
+			p = p & S_IWGRP;
+			if(p==020)
+				per_flag=1;
+		}
+		else
+		{
+			p = p & S_IWOTH;
+			if(p==02)
+				per_flag=1;
+		}
+		if(per_flag){	
+			my_file_tree_node->m_time=time(NULL);
+			len=strlen(buf);
+			my_file->data = (char *)realloc(my_file, sizeof(char) * len);
+			my_file->size=len;
+			memcpy(my_file->data, buf, len);
+
+			printf("len is:%ld\n\n",my_file->size);
+			printf("content is : %s\n", my_file->data);
+			return len;
+		}
+		else
+			return -EACCES;
+	}
+	return -ENOENT;
+}
+
+
 static int do_chmod(const char *path, mode_t new)
 {	printf("\n[chmod called]\n");
 	FStree * current;
@@ -215,6 +265,7 @@ static struct fuse_operations operations = {
     .rmdir      = do_rmdir,
     .open       = do_open,
     .read	= do_read,
+	.write  = do_write,
     .chmod	= do_chmod,
     .create	= do_create,
     .utimens	= do_utime,
