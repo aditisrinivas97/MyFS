@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include<sys/stat.h>
 /*
     This file contains all the functions necessary to support an in memory FS tree.
 */
@@ -11,7 +11,7 @@ struct FSfile{
 	char * name;
 	char * data;
 	long int offset;
-	long int size;
+	off_t size;
 };
 struct FStree{
     char * path;                // Path upto node
@@ -25,6 +25,7 @@ struct FStree{
     time_t a_time;
     time_t m_time;
     time_t c_time;
+    off_t size;
     struct FStree * parent;     // Pointer to parent node
     struct FStree ** children;  // Pointers to children nodes
     struct FSfile ** fchildren; // Pointers to files in the directory
@@ -173,6 +174,7 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
     new->parent = parent;
     new->children = NULL;
     new->num_files=0;
+    new->size=0;
     return new;
 }
 
@@ -262,7 +264,7 @@ FSfile * init_file(const char * path,char * name){
 	FSfile * new = (FSfile *)malloc(sizeof(FSfile));
 	new->path = (char *)path;
 	new->name = name;
-	new->data="";
+	new->data = "";
 	new->size=0;
 	new->offset=0;
 	//new->c_time=time(&t);
@@ -431,11 +433,11 @@ FSfile * find_file(const char * path)
     insert_file(newpath_file3);
     char * newpath_file4="/file4.txt";
     insert_file(newpath_file4);
-    char * newpath_file5="/file5.txt";
+    char * newpath_file5="/file";
     insert_file(newpath_file5);
-    FStree * node = search_node("a/b/file.txt");
+    FStree * node = search_node("/");
     delete_node("/");
-    node = search_node("a/b/file.txt");
+    node = search_node("/file");
     if(node == NULL){
         printf("failed! No such directory!\n");
     }

@@ -17,7 +17,7 @@ static int do_getattr(const char *path, struct stat *st){
     char * copy_path = (char *)path;
     int i = 0;
     FStree * dir_node = NULL;
-
+    FSfile * file_node = NULL;
     if(strlen(copy_path) > 1){
         dir_node = search_node(copy_path);
     }
@@ -34,7 +34,8 @@ static int do_getattr(const char *path, struct stat *st){
         }
         else{
             st->st_nlink = 1;
-            st->st_size = 1024;
+	    file_node=find_file(path);
+            st->st_size = file_node->size;
         }
     }
 	
@@ -99,7 +100,7 @@ static int do_open(const char *path, struct fuse_file_info *fi) {
 static int do_read(const char *path, char *buf, size_t size, off_t offset,
     struct fuse_file_info *fi) {
 	printf("\n[read called]\n");
-	int len;
+	size_t len;
 	FStree * my_file_tree_node;
 	FSfile * my_file;
 	char * filecontent;
@@ -132,9 +133,11 @@ static int do_read(const char *path, char *buf, size_t size, off_t offset,
 		if(per_flag){	
 			my_file_tree_node->a_time=time(NULL);
 			len=strlen(my_file->data);
-			strcpy(filecontent,my_file->data);
-			memcpy(buf, filecontent, len);
-			return len;
+			if(len==0)
+				return 0;
+			memcpy(buf, my_file->data + offset, size);
+			printf("\n read char are :%s and len is :%d\n",buf,(int)strlen(buf));
+			return size;
 		}
 		else
 			return -EACCES;
@@ -153,12 +156,61 @@ static int do_chmod(const char *path, mode_t new)
 	}
 	return -ENOENT;
 }
+static int do_write(const char *path, char *buf, size_t size, off_t offset,
+    struct fuse_file_info *fi) {
+	printf("\n[Write called]\n");
+	int len;
+	FStree * my_file_tree_node;
+	FSfile * my_file;
+	my_file = find_file(path);
+	uid_t u=getuid();
+	gid_t g=getgid();
+	mode_t p;
+	int per_flag=0;
+	if(my_file!=NULL){
+		my_file_tree_node = search_node((char *)path);
+		p = my_file_tree_node->permissions;
+		if(u==my_file_tree_node->user_id)
+		{
+			p = p & S_IWUSR;
+			if(p==0200)
+				per_flag=1;
+		}
+		else if(g==my_file_tree_node->group_id)
+		{
+			p = p & S_IWGRP;
+			if(p==020)
+				per_flag=1;
+		}
+		else
+		{
+			p = p & S_IWOTH;
+			if(p==02)
+				per_flag=1;
+		}
+		if(per_flag){	
+			my_file_tree_node->m_time=time(NULL);
+			my_file_tree_node->a_time=time(NULL);
+			len=strlen(buf);
+			my_file->data = (char *)realloc(my_file, sizeof(char) * len);
+			my_file->size=len;
+			memcpy(my_file->data,buf, size);
+			my_file_tree_node->size = len;
+			printf("len is:%ld\n\n",my_file->size);
+			printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
+			printf("content is : %s and len is:%d\n", my_file->data,(int)strlen(my_file->data));
+			return size;
+		}
+		else
+			return -EACCES;
+	}
+	return -ENOENT;
+}
 static int do_utime(){
 	return 0;
 }
 static struct fuse_operations operations = {
     .getattr	= do_getattr,
-    .readdir	= do_readdir,
     .mkdir      = do_mkdir,
     .rmdir      = do_rmdir,
     .open       = do_open,
@@ -166,12 +218,14 @@ static struct fuse_operations operations = {
     .chmod	= do_chmod,
     .create	= do_create,
     .utimens	= do_utime,
+    .readdir	= do_readdir,
+    .write	= do_write,
 };
 
 int main( int argc, char *argv[] ){
     char * rpath = "/";
     insert_node(rpath);
-    insert_file("/file");
+    insert_file("/file.txt");
     return fuse_main(argc, argv, &operations, NULL);
 }
 
