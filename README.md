@@ -8,6 +8,9 @@ This is a naive implementation as the persistence of data does not pertain to an
 - [Description](https://github.com/aditisrinivas97/MyFS#Description)
 - [Features](https://github.com/aditisrinivas97/MyFS#Features)
 - [Installing Dependencies](https://github.com/aditisrinivas97/MyFS#Installing-Dependencies)
+- [Licence](https://github.com/aditisrinivas97/MyFS#Licence)
+- [Credits](https://github.com/aditisrinivas97/MyFS#Credits)
+
 
 ## Description
 
