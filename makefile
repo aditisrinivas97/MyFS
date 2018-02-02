@@ -1,7 +1,7 @@
 username = $(shell whoami)
 files = fsmain.c fsoperations.c fstree.c
 opflag = -o fs
-flags = `pkg-config fuse --cflags --libs` -DFUSE_USE_VERSION=22
+flags = `pkg-config fuse --cflags --libs` -DFUSE_USE_VERSION=25
 
 all: run
 

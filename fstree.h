@@ -57,5 +57,5 @@ void insert_file(const char * path);
 void delete_file(const char *path);
 void delete_node(const char * path);
 FSfile * find_file(const char * path);
-
+void move_node(const char * from,const char * to);
 #endif

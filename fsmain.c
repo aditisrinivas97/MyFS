@@ -23,6 +23,8 @@ static struct fuse_operations operations = {
         .write		= do_write,
 		.truncate   = do_truncate,
         .utime	 = do_utimens,
+	.access	= do_access,
+	.rename =do_rename,
 };
 
 int main( int argc, char *argv[] ){

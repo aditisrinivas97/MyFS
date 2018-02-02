@@ -396,3 +396,80 @@ FSfile * find_file(const char * path){
 	}
 	return NULL;
 }
+void move_node(const char * from,const char * to){
+	//FStree * copy = (FStree **)malloc(sizeof(FStree *));
+	int i,j;
+	char * copy_frompath = (char *)from;
+	FStree * dir_node = search_node(copy_frompath);
+	
+	if(dir_node!=NULL){
+		
+		char * name = extract_dir(&copy_frompath);
+		copy_frompath++;
+		FStree * parent_dir_node;
+		if(strlen(copy_frompath) == 0){ 
+			parent_dir_node = root;
+		}
+		else{
+			char * rpath = reverse(reverse(copy_frompath,0),1);
+			parent_dir_node = search_node(rpath);
+		}
+		char * copy_topath = (char *)to;
+		char * toname = extract_dir(&copy_topath);
+		printf("\ntoname :%s",toname);
+		copy_topath++;
+		FStree * to_parent_dir_node;
+		if(strlen(copy_topath) == 0){ 
+			to_parent_dir_node = root;
+		}
+		else{
+			printf("\nparent node:\n");
+			char * r_topath = reverse(reverse(copy_topath,0),1);
+			printf("\nparent node 2 :%s\n",r_topath);
+			to_parent_dir_node = search_node(r_topath);
+			printf("\nparent node:%s\n",to_parent_dir_node->name);
+		}
+		to_parent_dir_node->num_children++;
+		to_parent_dir_node->children = (FStree **)realloc(to_parent_dir_node->children,sizeof(FStree *) * to_parent_dir_node->num_children);
+		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;
+		printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->name);
+		printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+		for(i=0;i<parent_dir_node->num_children;i++)
+		{
+			if(strcmp(parent_dir_node->children[i]->name,name)==0){
+				printf("\n i am :%s\n",parent_dir_node->children[i]->name);
+				for(j=i;j<parent_dir_node->num_children-1;j++){
+				parent_dir_node->children[j]=parent_dir_node->children[j+1];
+				printf("\n i am :%s\n",parent_dir_node->children[i]->name);
+				}
+				break;
+			}
+		}
+		parent_dir_node->num_children--;
+		if(parent_dir_node->num_children == 0){
+			printf("\n in delete:%s\n",parent_dir_node->name);
+               		parent_dir_node->children = NULL;
+        	}
+           	else{
+                	parent_dir_node->children = (FStree **)realloc(parent_dir_node->children,sizeof(FStree *) * parent_dir_node->num_children);
+            	}
+
+		if(strcmp(dir_node->type,"file")==0){
+			
+			FSfile * file_node=find_file(from);
+			to_parent_dir_node->num_files++;
+			to_parent_dir_node->fchildren = (FSfile **)realloc(to_parent_dir_node->fchildren,sizeof(FSfile *) * to_parent_dir_node->num_files);
+			to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]=file_node;
+			printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]->name);
+			printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+			parent_dir_node->num_files--;
+			if(parent_dir_node->num_files == 0){
+				printf("\n in delete:%s\n",parent_dir_node->name);
+                		parent_dir_node->fchildren = NULL;
+            		}
+            		else{
+                		parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
+            		}
+		}
+	}		
+}
