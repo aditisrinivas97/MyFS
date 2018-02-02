@@ -195,6 +195,35 @@ int do_utimens(const char *path, struct utimbuf *tv){
 	return 0;
 }
 
+int do_truncate(const char *path, off_t size, struct fuse_file_info *fi)
+{
+printf("\n[Truncate called]\n");
+FSfile * my_file_tree_node;
+FSfile * my_file;
+my_file = find_file(path);
+if(my_file !=NULL)
+{
+	if(size<=0){
+		free(my_file->data);
+		my_file->data = (char *)calloc(1,sizeof(char));
+		my_file->size=0;
+	}
+	else{
+		char *buf;
+		buf=(char *)malloc(sizeof(char)*(size+1));
+		strncpy(buf,my_file->data,size);
+		free(my_file->data);
+		my_file->data = (char *)calloc(size+1,sizeof(char));
+		strcpy(my_file->data,buf);
+		my_file->size=size;
+	
+	}
+		printf("content is : %s and len is:%d\n", my_file->data,(int)strlen(my_file->data));
+	return 0;
+}
+return -ENOENT;
+}
+
 
 //gcc operations.c -o operations `pkg-config fuse --cflags --libs`
 

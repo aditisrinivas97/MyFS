@@ -21,6 +21,7 @@ static struct fuse_operations operations = {
         .unlink     = do_unlink,
         .chmod		= do_chmod,
         .write		= do_write,
+		.truncate   = do_truncate,
         .utime	 = do_utimens,
 };
 
