@@ -95,6 +95,7 @@ FStree * search_node(char * path){
     }
     while(temp != NULL){
         curr_node = extract_path(&path);
+	printf("\n curr_node =%s and no:%s\n",curr_node,temp->name);
         if(strlen(curr_node) == 0){
             break;
         }
@@ -102,10 +103,12 @@ FStree * search_node(char * path){
             if(strcmp(temp->children[i]->name, curr_node) == 0){
                 retval = temp->children[i];
                 temp = temp->children[i];
+		
                 flag = 1;
             }
         }
         if(!flag){
+		printf("ewfjhywejk");
             return NULL;
         }
         else{
@@ -351,6 +354,7 @@ void delete_node(const char * path){
             }
             for(i = 0; i < dir_node->parent->num_children; i++){
                 if(dir_node->parent->children[i] == dir_node){
+			printf("\n@@@@@@@@\n");
                     for(j = i; j < dir_node->parent->num_children - 1; j++){
                         dir_node->parent->children[j] = dir_node->parent->children[j+1];
                     }
@@ -401,7 +405,7 @@ void move_node(const char * from,const char * to){
 	int i,j;
 	char * copy_frompath = (char *)from;
 	FStree * dir_node = search_node(copy_frompath);
-	
+	char temp_path[20];
 	if(dir_node!=NULL){
 		
 		char * name = extract_dir(&copy_frompath);
@@ -431,8 +435,9 @@ void move_node(const char * from,const char * to){
 		}
 		to_parent_dir_node->num_children++;
 		to_parent_dir_node->children = (FStree **)realloc(to_parent_dir_node->children,sizeof(FStree *) * to_parent_dir_node->num_children);
+		dir_node->a_time = time(NULL);
 		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;
-		printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->name);
+		printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->path);
 		printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
 		for(i=0;i<parent_dir_node->num_children;i++)
 		{
@@ -453,7 +458,7 @@ void move_node(const char * from,const char * to){
            	else{
                 	parent_dir_node->children = (FStree **)realloc(parent_dir_node->children,sizeof(FStree *) * parent_dir_node->num_children);
             	}
-
+		
 		if(strcmp(dir_node->type,"file")==0){
 			
 			FSfile * file_node=find_file(from);
@@ -471,5 +476,45 @@ void move_node(const char * from,const char * to){
                 		parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
             		}
 		}
+		strcpy(temp_path,to_parent_dir_node->path);
+		//strcat(temp_path,copy_topath);
+		dir_node->parent=to_parent_dir_node;
+		path_update(dir_node,temp_path);
 	}		
 }
+
+void path_update(FStree * dir_node,char * topath)
+{
+	FStree * temp=dir_node;
+	int i,j;
+	temp->path=realloc(temp->path,strlen(topath)+strlen(temp->name)+1);
+	memset(temp->path,0,strlen(topath)+strlen(temp->name));
+	printf("\n1.temp->path:%s",temp->path);
+	strcat(temp->path,topath);
+	printf("\n1.temp->path:%s",temp->path);
+	temp->path[strlen(topath)]='/';
+	strcat(temp->path,temp->name); 
+	temp->path[strlen(topath)+strlen(temp->name)+1]='\0';
+	printf("\nreceived:%s and temp->path :%s and temp->name:%s\n",topath,temp->path,temp->name);
+	printf("\n in update am :%s and my parent is:%s and child:%d\n",temp->path,dir_node->parent->name,temp->num_children);
+	//if(strcmp(temp->type,"directory")==0)
+	//{
+		for(i=0;i<temp->num_children;i++){
+			for(j=0;j<temp->num_files;j++)
+			{
+			
+				memset(temp->fchildren[j]->path,0,strlen(temp->path)+strlen(temp->name));
+				strcat(temp->fchildren[j]->path,temp->path);
+				temp->fchildren[j]->path[strlen(temp->path)]='/';
+				strcat(temp->fchildren[j]->path,temp->fchildren[j]->name);
+				temp->fchildren[j]->path[strlen(temp->path)+strlen(temp->name)+1]='\0';
+				printf("\nin update file:%s",temp->fchildren[j]->path); 
+			}
+			temp->children[i]->parent=dir_node;
+			//if(strcmp(temp->children[i]->type,"directory")==0)
+			path_update(temp->children[i],temp->path);
+		}
+	//}
+}
+	
+
