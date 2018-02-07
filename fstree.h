@@ -30,6 +30,7 @@ struct FStree{
     time_t a_time;
     time_t m_time;
     time_t c_time;
+    time_t b_time;
     off_t size;
     struct FStree * parent;     // Pointer to parent node
     struct FStree ** children;  // Pointers to children nodes

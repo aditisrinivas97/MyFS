@@ -142,6 +142,7 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
     new->c_time = time(&t);
     new->a_time = time(&t);
     new->m_time = time(&t);
+    new->b_time = time(&t);
     new->num_children = 0;
     new->parent = parent;
     new->children = NULL;
@@ -177,6 +178,11 @@ void insert_node(const char * path){
         else{
             dir_node = search_node(copy_path);  // get the parent directory's address
             if(dir_node != NULL){
+		if(dir_node->parent!=NULL){
+			printf("\nparent is:%s",dir_node->parent->name);
+			dir_node->c_time=time(NULL);
+	    		dir_node->m_time=time(NULL);
+		}
                 printf("Nesting directory!\n");
                 dir_node->num_children++;
                 printf("Number of children : %d\n", dir_node->num_children);
@@ -273,14 +279,16 @@ void delete_file(const char *path){
 		FSfile * del_file = NULL;
 		char * copy_path = (char *)path;
 		char * name = extract_dir(&copy_path);
-        printf("Name : %s\t Path: %s\n", name, copy_path);
-       	if(strlen(copy_path) == 1){
+		printf("Name : %s\t Path: %s\n", name, copy_path);
+	       	if(strlen(copy_path) == 1){
 			parent_dir_node = root;
 		}
 		else{
 			char * rpath = reverse(reverse(copy_path,0),1);
 			parent_dir_node = search_node(rpath);
 		}
+		parent_dir_node->c_time=time(&t);
+	        parent_dir_node->m_time=time(&t);
 		for(i = 0;i < parent_dir_node->num_children ; i++){
 			if(strcmp(parent_dir_node->children[i]->name, name) == 0){	
 				for(j = i; j < parent_dir_node->num_children - 1; j++){
@@ -335,6 +343,8 @@ void delete_node(const char * path){
         else{
             printf("Search for %s\n", copy_path);
             dir_node = search_node(copy_path);  // get the directory's address
+	    dir_node->parent->c_time=time(&t);
+	    dir_node->parent->m_time=time(&t);
             printf("After search : %s\n", copy_path);
             printf("Node name : %s\n", dir_node->name);
             printf("Node path : %s\n", dir_node->path);
@@ -434,6 +444,7 @@ void move_node(const char * from,const char * to){
 			printf("\nparent node:%s\n",to_parent_dir_node->name);
 		}
 		to_parent_dir_node->num_children++;
+		to_parent_dir_node->c_time=time(NULL);
 		to_parent_dir_node->children = (FStree **)realloc(to_parent_dir_node->children,sizeof(FStree *) * to_parent_dir_node->num_children);
 		dir_node->a_time = time(NULL);
 		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;
