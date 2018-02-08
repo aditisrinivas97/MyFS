@@ -412,7 +412,7 @@ FSfile * find_file(const char * path){
 }
 void move_node(const char * from,const char * to){
 	//FStree * copy = (FStree **)malloc(sizeof(FStree *));
-	int i,j;
+	int i,j,flag=0;
 	char * copy_frompath = (char *)from;
 	FStree * dir_node = search_node(copy_frompath);
 	char temp_path[20];
@@ -432,7 +432,10 @@ void move_node(const char * from,const char * to){
 		char * toname = extract_dir(&copy_topath);
 		printf("\ntoname :%s",toname);
 		copy_topath++;
+		FSfile * file_node;
 		FStree * to_parent_dir_node;
+		if(search_node((char *)to)==NULL)
+			flag=1;
 		if(strlen(copy_topath) == 0){ 
 			to_parent_dir_node = root;
 		}
@@ -447,7 +450,7 @@ void move_node(const char * from,const char * to){
 		to_parent_dir_node->c_time=time(NULL);
 		to_parent_dir_node->children = (FStree **)realloc(to_parent_dir_node->children,sizeof(FStree *) * to_parent_dir_node->num_children);
 		dir_node->a_time = time(NULL);
-		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;
+		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;		
 		printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->path);
 		printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
 		for(i=0;i<parent_dir_node->num_children;i++)
@@ -472,7 +475,7 @@ void move_node(const char * from,const char * to){
 		
 		if(strcmp(dir_node->type,"file")==0){
 			
-			FSfile * file_node=find_file(from);
+			file_node=find_file(from);
 			to_parent_dir_node->num_files++;
 			to_parent_dir_node->fchildren = (FSfile **)realloc(to_parent_dir_node->fchildren,sizeof(FSfile *) * to_parent_dir_node->num_files);
 			to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]=file_node;
@@ -486,11 +489,24 @@ void move_node(const char * from,const char * to){
             		else{
                 		parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
             		}
+			if(flag==1)
+			{
+			file_node->name=toname;
+			file_node->path=(char *)to;
+			}
 		}
 		strcpy(temp_path,to_parent_dir_node->path);
 		//strcat(temp_path,copy_topath);
 		dir_node->parent=to_parent_dir_node;
-		path_update(dir_node,temp_path);
+		if(flag==1)
+		{
+				dir_node->name=toname;
+				dir_node->path=(char *)to;
+		}
+		if(strcmp(dir_node->type,"directory")==0)
+		{
+			path_update(dir_node,temp_path);
+		}
 	}		
 }
 
