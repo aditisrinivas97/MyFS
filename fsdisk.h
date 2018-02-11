@@ -1,0 +1,47 @@
+#ifndef DISKOPS
+#define DISKOPS
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <math.h>
+#include "fstree.h"
+#include "bitmap.h"
+
+#define INIT_SIZE 1048576
+#define BLOCK_SIZE 4096
+#define OPEN_MARKER "{\n"
+#define CLOSE_MARKER "}\n"
+
+extern FStree * root;
+
+int data_fd;
+int meta_fd;
+
+uint64_t datamap_size;
+uint8_t * datamap;
+uint64_t metamap_size;
+uint8_t * metamap;
+
+void resetdatafd();
+void resetmetafd();
+void writebitmap(int fd, uint8_t * bitmap, uint64_t bitmap_size);
+void loadbitmap(int fd, uint8_t ** bitmap, uint64_t bitmap_size);
+int createdisk();
+unsigned long int find_free_block(uint8_t * bitmap, uint64_t bitmap_size);
+void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
+void serialize_metadata(FStree * temp);
+void serialize_metadata_wrapper(FStree * node);
+int openblock();
+int closeblock();
+int get_parent_block(int fd, FStree * node, int child_blocknumber);
+void updatechildren(int fd, int parent_blocknumber, FStree * node, int child_blocknumber);
+
+#endif

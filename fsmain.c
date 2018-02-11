@@ -7,8 +7,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <stdint.h>
 #include "fstree.h"
 #include "fsoperations.h"
+#include "bitmap.h"
+#include "fsdisk.h"
 
 static struct fuse_operations operations = {
         .getattr	= do_getattr,
@@ -30,5 +33,8 @@ static struct fuse_operations operations = {
 int main( int argc, char *argv[] ){
     char * rpath = "/";
     insert_node(rpath);
+    FStree * node = search_node((char *)rpath);
+    createdisk();
+    serialize_metadata_wrapper(node);
     return fuse_main(argc, argv, &operations);
 }

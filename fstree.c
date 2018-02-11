@@ -29,7 +29,7 @@ char * extract_path(char ** copy_path){
     }
     retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
     retval[retlen] = '\0';
-    printf("END OF EXTRACT PATH. Retval : %s\n", retval);
+    //printf("END OF EXTRACT PATH. Retval : %s\n", retval);
     return retval;
 }
 
@@ -39,7 +39,7 @@ E.g "/a/d/" should produce current dir as 'd' and not '/' */
 char * reverse(char * str, int mode){
     int i;
     int len = strlen(str);
-    printf("REVERSE : %s %d\n", str, len);
+    //printf("REVERSE : %s %d\n", str, len);
     char * retval = (char *)calloc(sizeof(char), (len + 1));
     for(i = 0; i <= len/2; i++){
         retval[i] = str[len - 1 -i];
@@ -58,7 +58,7 @@ char * extract_dir(char ** copy_path){
     char temp;
     char * tempstr;
     *copy_path = reverse(*copy_path, 1);    // change "a/b/c" to "c/b/a" and extract content upto the first '/'
-    printf("BEGIN EXTRACT : %s\n", *copy_path);
+    //printf("BEGIN EXTRACT : %s\n", *copy_path);
     temp = **(copy_path);
     while(temp != '/'){    
         tempstr = (char *)malloc(sizeof(char) * (retlen + 1));
@@ -78,8 +78,8 @@ char * extract_dir(char ** copy_path){
     retval[retlen] = '\0';
     retval = reverse(retval, 0);        // reverse the content of the return value. E.g if dir was abc, retval would be cba and would need to be reversed.
     *(copy_path) = reverse(*(copy_path), 0);    // reverse the orginial path
-   //printf("done reversing\n");
-    printf("END OF EXTRACT DIR : %s %s\n", *copy_path, retval);
+   ////printf("done reversing\n");
+    //printf("END OF EXTRACT DIR : %s %s\n", *copy_path, retval);
     return retval;
 }
 
@@ -91,11 +91,11 @@ FStree * search_node(char * path){
     int flag = 0, i = 0;
     if(path[0] == '/'){
         path++;
-        printf("SEARCH %s\n",path);
+        //printf("SEARCH %s\n",path);
     }
     while(temp != NULL){
         curr_node = extract_path(&path);
-	printf("\n curr_node =%s and no:%s\n",curr_node,temp->name);
+	//printf("\n curr_node =%s and no:%s\n",curr_node,temp->name);
         if(strlen(curr_node) == 0){
             break;
         }
@@ -108,21 +108,21 @@ FStree * search_node(char * path){
             }
         }
         if(!flag){
-		printf("ewfjhywejk");
+		//printf("ewfjhywejk");
             return NULL;
         }
         else{
             flag = 0;
         }
     }
-    printf("Returning from search!\n");
+    //printf("Returning from search!\n");
     return retval;
 }
 
 // Function to initialise an FS tree node
 FStree * init_node(const char * path, char * name, FStree * parent,int type){
     FStree * new = (FStree *)malloc(sizeof(FStree));
-    printf("INITIALISING WITH PATH : %s\n", path);
+    //printf("INITIALISING WITH PATH : %s\n", path);
     new->path = (char *)calloc(sizeof(char), strlen(path) + 1);
     new->name = (char *)calloc(sizeof(char), strlen(name) + 1);
     strcpy(new->path, (char *)path);
@@ -159,11 +159,11 @@ void insert_node(const char * path){
         return;
     }
     else{
-        printf("PATH BEFORE INSERT : %s\n", path);
+        //printf("PATH BEFORE INSERT : %s\n", path);
         char * copy_path = (char *)path;
         char * dir = extract_dir(&copy_path);
         FStree * dir_node = NULL;
-        printf("IN INSERT : %s %s\n", copy_path, dir);
+        //printf("IN INSERT : %s %s\n", copy_path, dir);
         if(strlen(copy_path) == 1){     // if the new directory belongs to the root node
             root->num_children++;
             if(root->children == NULL){
@@ -179,21 +179,21 @@ void insert_node(const char * path){
             dir_node = search_node(copy_path);  // get the parent directory's address
             if(dir_node != NULL){
 		if(dir_node->parent!=NULL){
-			printf("\nparent is:%s",dir_node->parent->name);
+			//printf("\nparent is:%s",dir_node->parent->name);
 			dir_node->c_time=time(NULL);
 	    		dir_node->m_time=time(NULL);
 		}
-                printf("Nesting directory!\n");
+                //printf("Nesting directory!\n");
                 dir_node->num_children++;
-                printf("Number of children : %d\n", dir_node->num_children);
+                //printf("Number of children : %d\n", dir_node->num_children);
                 dir_node->children = (FStree **)realloc(dir_node->children, sizeof(FStree *) * dir_node->num_children);
                 dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node,1);
-                printf("Name : %s\n", dir_node->children[dir_node->num_children - 1]->name);
-                printf("Path : %s\n", dir_node->children[dir_node->num_children - 1]->path);
-                printf("Children : %d\n\n", dir_node->children[dir_node->num_children - 1]->num_children);
+                //printf("Name : %s\n", dir_node->children[dir_node->num_children - 1]->name);
+                //printf("Path : %s\n", dir_node->children[dir_node->num_children - 1]->path);
+                //printf("Children : %d\n\n", dir_node->children[dir_node->num_children - 1]->num_children);
             }
             else{
-                printf("No such file or directory in the given path!\n");
+                //printf("No such file or directory in the given path!\n");
             }
         }
         return;
@@ -221,7 +221,7 @@ void insert_file(const char * path){
         char * name = extract_dir(&copy_path);
 	copy_path++;
         if(strlen(copy_path) == 0){ // for files in root
-		//printf("filename is :%s and parent directory is root\n",name);
+		////printf("filename is :%s and parent directory is root\n",name);
 		root->num_children++;
             	if(root->children == NULL){ // if root has no sub-dir or files
                 	root->children = (FStree **)malloc(sizeof(FStree *));
@@ -245,7 +245,7 @@ void insert_file(const char * path){
 	else{
 		char * rpath = reverse(reverse(copy_path,0),1);
 		FStree * parent_dir_node = search_node(rpath);
-		//printf("filename is :%s and parent directory is:%s\n",name,parent_dir_node->name);
+		////printf("filename is :%s and parent directory is:%s\n",name,parent_dir_node->name);
 		if(parent_dir_node != NULL){
 		        parent_dir_node->num_children++;
 		        parent_dir_node->children = (FStree **)realloc(parent_dir_node->children, sizeof(FStree *) * parent_dir_node->num_children);
@@ -262,10 +262,10 @@ void insert_file(const char * path){
 			}
             	}
             	else{
-                	printf("No such file or directory in the given path!\n");
+                	//printf("No such file or directory in the given path!\n");
 		}
 	}
-	printf("\nINSERTION OF FILE INTO TREE DONE\n");
+	//printf("\nINSERTION OF FILE INTO TREE DONE\n");
 }
 
 //function to delete file from FStree
@@ -279,7 +279,7 @@ void delete_file(const char *path){
 		FSfile * del_file = NULL;
 		char * copy_path = (char *)path;
 		char * name = extract_dir(&copy_path);
-		printf("Name : %s\t Path: %s\n", name, copy_path);
+		//printf("Name : %s\t Path: %s\n", name, copy_path);
 	       	if(strlen(copy_path) == 1){
 			parent_dir_node = root;
 		}
@@ -321,14 +321,14 @@ void delete_file(const char *path){
             parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
         }
 		
-		printf("\nFile %s deleted",name);
+		//printf("\nFile %s deleted",name);
 		free(del_file);
     }
 }
 
 // Function to delete a node in the FS tree
 void delete_node(const char * path){
-    printf("DELETING PATH : %s\n", path);
+    //printf("DELETING PATH : %s\n", path);
     if(root == NULL){
         return;
     }
@@ -337,34 +337,34 @@ void delete_node(const char * path){
         FStree * dir_node = NULL;
         int i, j;
         if(strlen(copy_path) == 1){
-            printf("Cannot delete root directory!\n");  // do not allow deletion of root directory
+            //printf("Cannot delete root directory!\n");  // do not allow deletion of root directory
             return;
         }
         else{
-            printf("Search for %s\n", copy_path);
+            //printf("Search for %s\n", copy_path);
             dir_node = search_node(copy_path);  // get the directory's address
 	    dir_node->parent->c_time=time(&t);
 	    dir_node->parent->m_time=time(&t);
-            printf("After search : %s\n", copy_path);
-            printf("Node name : %s\n", dir_node->name);
-            printf("Node path : %s\n", dir_node->path);
-            printf("Node children : %d\n", dir_node->num_children);
+            //printf("After search : %s\n", copy_path);
+            //printf("Node name : %s\n", dir_node->name);
+            //printf("Node path : %s\n", dir_node->path);
+            //printf("Node children : %d\n", dir_node->num_children);
             if(dir_node->children != NULL){
                 for(i = dir_node->num_children - 1; i >= 0; i--){
-                    printf("Delete path : %s\n", dir_node->children[i]->path);
+                    //printf("Delete path : %s\n", dir_node->children[i]->path);
                     if(strcmp(dir_node->type, "directory") == 0){
                         delete_node((const char *)dir_node->children[i]->path);       // recursively delete all the sub directories
                     }
                 }
             }
-            //printf("node name : %s \n", dir_node->name);
+            ////printf("node name : %s \n", dir_node->name);
 
             while(dir_node->num_files > 0){
                 delete_file(dir_node->fchildren[dir_node->num_files - 1]->path);
             }
             for(i = 0; i < dir_node->parent->num_children; i++){
                 if(dir_node->parent->children[i] == dir_node){
-			printf("\n@@@@@@@@\n");
+			//printf("\n@@@@@@@@\n");
                     for(j = i; j < dir_node->parent->num_children - 1; j++){
                         dir_node->parent->children[j] = dir_node->parent->children[j+1];
                     }
@@ -400,7 +400,7 @@ FSfile * find_file(const char * path){
 		char * rpath = reverse(reverse(copy_path,0),1);
 		parent_dir_node = search_node(rpath);
 	}
-	printf("\nparent is :%s",parent_dir_node->name);
+	//printf("\nparent is :%s",parent_dir_node->name);
 	for(i=0;i<parent_dir_node->num_files;i++)
 	{
 		if(strcmp(parent_dir_node->fchildren[i]->name,name)==0){
@@ -430,7 +430,7 @@ void move_node(const char * from,const char * to){
 		}
 		char * copy_topath = (char *)to;
 		char * toname = extract_dir(&copy_topath);
-		printf("\ntoname :%s",toname);
+		//printf("\ntoname :%s",toname);
 		copy_topath++;
 		FSfile * file_node;
 		FStree * to_parent_dir_node;
@@ -440,33 +440,33 @@ void move_node(const char * from,const char * to){
 			to_parent_dir_node = root;
 		}
 		else{
-			printf("\nparent node:\n");
+			//printf("\nparent node:\n");
 			char * r_topath = reverse(reverse(copy_topath,0),1);
-			printf("\nparent node 2 :%s\n",r_topath);
+			//printf("\nparent node 2 :%s\n",r_topath);
 			to_parent_dir_node = search_node(r_topath);
-			printf("\nparent node:%s\n",to_parent_dir_node->name);
+			//printf("\nparent node:%s\n",to_parent_dir_node->name);
 		}
 		to_parent_dir_node->num_children++;
 		to_parent_dir_node->c_time=time(NULL);
 		to_parent_dir_node->children = (FStree **)realloc(to_parent_dir_node->children,sizeof(FStree *) * to_parent_dir_node->num_children);
 		dir_node->a_time = time(NULL);
 		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;		
-		printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->path);
-		printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+		//printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->path);
+		//printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
 		for(i=0;i<parent_dir_node->num_children;i++)
 		{
 			if(strcmp(parent_dir_node->children[i]->name,name)==0){
-				printf("\n i am :%s\n",parent_dir_node->children[i]->name);
+				//printf("\n i am :%s\n",parent_dir_node->children[i]->name);
 				for(j=i;j<parent_dir_node->num_children-1;j++){
 				parent_dir_node->children[j]=parent_dir_node->children[j+1];
-				printf("\n i am :%s\n",parent_dir_node->children[i]->name);
+				//printf("\n i am :%s\n",parent_dir_node->children[i]->name);
 				}
 				break;
 			}
 		}
 		parent_dir_node->num_children--;
 		if(parent_dir_node->num_children == 0){
-			printf("\n in delete:%s\n",parent_dir_node->name);
+			//printf("\n in delete:%s\n",parent_dir_node->name);
                		parent_dir_node->children = NULL;
         	}
            	else{
@@ -479,11 +479,11 @@ void move_node(const char * from,const char * to){
 			to_parent_dir_node->num_files++;
 			to_parent_dir_node->fchildren = (FSfile **)realloc(to_parent_dir_node->fchildren,sizeof(FSfile *) * to_parent_dir_node->num_files);
 			to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]=file_node;
-			printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]->name);
-			printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+			//printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]->name);
+			//printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
 			parent_dir_node->num_files--;
 			if(parent_dir_node->num_files == 0){
-				printf("\n in delete:%s\n",parent_dir_node->name);
+				//printf("\n in delete:%s\n",parent_dir_node->name);
                 		parent_dir_node->fchildren = NULL;
             		}
             		else{
@@ -516,14 +516,14 @@ void path_update(FStree * dir_node,char * topath)
 	int i,j;
 	temp->path=realloc(temp->path,strlen(topath)+strlen(temp->name)+1);
 	memset(temp->path,0,strlen(topath)+strlen(temp->name));
-	printf("\n1.temp->path:%s",temp->path);
+	//printf("\n1.temp->path:%s",temp->path);
 	strcat(temp->path,topath);
-	printf("\n1.temp->path:%s",temp->path);
+	//printf("\n1.temp->path:%s",temp->path);
 	temp->path[strlen(topath)]='/';
 	strcat(temp->path,temp->name); 
 	temp->path[strlen(topath)+strlen(temp->name)+1]='\0';
-	printf("\nreceived:%s and temp->path :%s and temp->name:%s\n",topath,temp->path,temp->name);
-	printf("\n in update am :%s and my parent is:%s and child:%d\n",temp->path,dir_node->parent->name,temp->num_children);
+	//printf("\nreceived:%s and temp->path :%s and temp->name:%s\n",topath,temp->path,temp->name);
+	//printf("\n in update am :%s and my parent is:%s and child:%d\n",temp->path,dir_node->parent->name,temp->num_children);
 	//if(strcmp(temp->type,"directory")==0)
 	//{
 		for(i=0;i<temp->num_children;i++){
@@ -535,7 +535,7 @@ void path_update(FStree * dir_node,char * topath)
 				temp->fchildren[j]->path[strlen(temp->path)]='/';
 				strcat(temp->fchildren[j]->path,temp->fchildren[j]->name);
 				temp->fchildren[j]->path[strlen(temp->path)+strlen(temp->name)+1]='\0';
-				printf("\nin update file:%s",temp->fchildren[j]->path); 
+				//printf("\nin update file:%s",temp->fchildren[j]->path); 
 			}
 			temp->children[i]->parent=dir_node;
 			//if(strcmp(temp->children[i]->type,"directory")==0)

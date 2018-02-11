@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "fstree.h"
+#include "fsdisk.h"
 
 extern FStree * root;
 
@@ -25,7 +26,7 @@ int do_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_f
 int do_chmod(const char *path, mode_t new);
 int do_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi);
 int do_utimens(const char *path, struct utimbuf *tv);
-int do_truncate(const char *path, off_t size, struct fuse_file_info *fi);
+int do_truncate(const char *path, off_t size);
 int do_rename(const char* from, const char* to);
 int do_access(const char* path,int mask);
 #endif

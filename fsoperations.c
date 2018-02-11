@@ -1,5 +1,5 @@
 #include "fsoperations.h"
-	
+
 int do_getattr(const char *path, struct stat *st){
 	printf( "[getattr] Called" );
 	printf( "Attributes of %s requested\n", path);
@@ -68,6 +68,11 @@ int do_readdir(const char *path, void *buffer, fuse_fill_dir_t filler, off_t off
 int do_mkdir(const char * path, mode_t x){
 	printf("[mkdir] called!\n");
 	insert_node(path);
+	FStree * node = search_node((char *)path);
+	if(node != NULL){
+		printf("SERIALISING!\n");
+		serialize_metadata_wrapper(node);
+	}
 	return 0;
 }
 	
@@ -258,8 +263,7 @@ int do_rename(const char* from, const char* to){
 	return 0;
 }
 
-int do_truncate(const char *path, off_t size, struct fuse_file_info *fi)
-{
+int do_truncate(const char *path, off_t size){
 	printf("\n[Truncate called]\n");
 	FSfile * my_file;
 	my_file = find_file(path);
