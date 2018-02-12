@@ -13,6 +13,8 @@
 #include "bitmap.h"
 #include "fsdisk.h"
 
+extern FStree * root;
+
 static struct fuse_operations operations = {
         .getattr	= do_getattr,
         .readdir	= do_readdir,
@@ -26,15 +28,14 @@ static struct fuse_operations operations = {
         .write		= do_write,
 		.truncate   = do_truncate,
         .utime	 = do_utimens,
-	.access	= do_access,
-	.rename =do_rename,
+        .access	= do_access,
+        .rename =do_rename,
 };
 
 int main( int argc, char *argv[] ){
     char * rpath = "/";
     insert_node(rpath);
-    FStree * node = search_node((char *)rpath);
     createdisk();
-    serialize_metadata_wrapper(node);
+    serialize_metadata_wrapper(root);
     return fuse_main(argc, argv, &operations);
 }

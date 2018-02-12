@@ -143,6 +143,7 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
     new->a_time = time(&t);
     new->m_time = time(&t);
     new->b_time = time(&t);
+	new->inode_number = -1;
     new->num_children = 0;
     new->parent = parent;
     new->children = NULL;

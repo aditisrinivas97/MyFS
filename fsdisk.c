@@ -81,99 +81,39 @@ unsigned long int find_free_block(uint8_t * bitmap, uint64_t bitmap_size){
     return freeblock;
 }
 
-// Updated the parent block's children array with the given node
-void updatechildren(int fd, int parent_blocknumber, FStree * node, int child_blocknumber){
-    FILE * fp = fdopen(fd, "r+");
-    //printf("UPDATING PARENT : %d\n", parent_blocknumber);
-    fseek(fp, parent_blocknumber * BLOCK_SIZE - 1, SEEK_SET);
-    //printf("INITIAL : %lu %lu\n", ftell(fp), lseek(fd, 0, SEEK_CUR));
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t lread = 0;
-    char * ref = "CPTR=";
-    int pos = 0;
-    char ch[1] = "\0";
-    while ((lread = getline(&line, &len, fp)) != -1){
-        //printf("LINE : %s %lu\n", line, ftell(fp));
-        pos = 0;
-        while((line[pos] == ref[pos]) && pos < 5){
-            //printf("%c\t", line[pos]);
-            pos++;
-        }
-        
-        if(pos == 5){
-            //printf("\n\nIMP : %s", line);
-            //printf("LREAD : %ld\n", lread);
-            //printf("MID : %lu %lu\n", ftell(fp), lseek(fd, 0, SEEK_CUR));
-            int off = -(lread + 1);
-            fseek(fp, off, SEEK_CUR);
-            lseek(fd, (off_t)ftell(fp), SEEK_SET);
-            //printf("NEW : %lu %lu\n", ftell(fp), lseek(fd, 0, SEEK_CUR));
-            while(read(fd, ch, 1) > 0){
-                //printf("%s\t",ch);
-                if(strcmp(ch, "|") == 0){
-                    break;
-                }
-            }
-            //printf("\n");
-            write(fd, &(child_blocknumber), sizeof(child_blocknumber));
-            write(fd, "|\0\n", 3);
-            return;
-        }
-    }
-    return;
-}
-
-// Returns the block number of the parent of the given node - for metadata
-int get_parent_block(int fd, FStree * node, int child_blocknumber){
-    if(strcmp(node->path, "/") == 0){
+// Returns the parent block number of the given node
+unsigned long int get_parent_block(int fd, FStree * node, int child_blocknumber){
+    if(node->parent == NULL){
         return -1;
     }
-    char * ref = "PATH=";
-    FILE * fp = fdopen(fd, "r");
-    fseek(fp, BLOCK_SIZE, SEEK_SET);
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t lread = 0;
-    int pos = 0;
-    int parentpos = 0;
-    int blocknumber = 1;
-    while ((lread = getline(&line, &len, fp)) != -1) {
-        //printf("LINE : %s\n", line);
-        pos = 0;
-        parentpos = 0;
-        while((line[pos] == ref[pos]) && pos < 5){
-            pos++;
-        }
-        if(pos == 5){
-            while((line[pos] == node->parent->path[parentpos]) && (node->parent->path[parentpos] != '\0')){
-                //printf("%c %c\n", line[pos], node->parent->path[parentpos]);
-                pos++;
-                parentpos++;
-            }
-            //printf("OUT\n");
-            if(node->parent->path[parentpos] == '\0'){
-                printf("Calling update children!\n");
-                updatechildren(fd, blocknumber, node, child_blocknumber);
-                //free(line);
-                return blocknumber;
-            }
-        }
-        if(strcmp(line, "}\n") == 0){
-            blocknumber++;
-        }
+    unsigned long int parent_inode = node->parent->inode_number;
+    return parent_inode;
+}
+
+// Wrapper function for update_parent_node function
+int update_parent_node_wrapper(FStree * node){
+    if(meta_fd < 0){
+        meta_fd = open("fsmeta", O_RDWR , 0644);
     }
-    //printf("Calling update children for root!\n");
-    updatechildren(fd, blocknumber, node, child_blocknumber);
-    free(line);
-    return -1;
+    lseek(meta_fd, (node->inode_number * BLOCK_SIZE), SEEK_SET);
+    update_parent_node(meta_fd, metamap, metamap_size, node);
+    return 0;
+}
+
+// Write the changes in parent node to disk
+int update_parent_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
+    clear_bit(&bitmap, node->inode_number);
+    write_diskfile(fd, bitmap, bitmap_size, node);
+    return 0;
 }
 
 // Writes the node values into the file specified by the file descriptor
 void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
+    printf("WRITING NODE TO DISK\n");
+    int childnodes = 0;
     unsigned long int freeblock = find_free_block(bitmap, bitmap_size);
     unsigned long int offset = freeblock * BLOCK_SIZE;
-    int i = 0;
+    unsigned long int init_next_block = -1;
     printf("\nNODE   : %s\n", node->path);
     printf("OFFSET : %lu\n", offset);
     printf("BLOCK NUMBER : %lu\n", freeblock);
@@ -183,6 +123,9 @@ void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * nod
     write(fd, OPEN_MARKER, 2);
     write(fd, "PATH=", 5);
     write(fd, node->path, (int)strlen(node->path));
+    write(fd, "\0\n", 2);
+    write(fd, "INOD=", 5);
+    write(fd, &(freeblock), sizeof(freeblock));
     write(fd, "\0\n", 2);
     write(fd, "TYPE=", 5);
     write(fd, node->type, (int)strlen(node->type));
@@ -214,16 +157,24 @@ void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * nod
     write(fd, "PPTR=", 5);
     write(fd, &(parent), sizeof(parent));
     write(fd, "\0\n", 2);
-    if(strcmp(node->type, "directory") == 0){
-        write(fd, "CPTR=|", 6);
-        for(i = 0; i < 50; i++){
-            write(fd, "0000", 4);
-        }
-    }
+    write(fd, "NBLK=", 5);
+    write(fd, &(init_next_block), sizeof(init_next_block));
     write(fd, "\0\n", 2);
-    //lseek(fd, (BLOCK_SIZE * (freeblock + 1) - 3), SEEK_SET); 
-    //printf("HOLE : %ld\n", lseek(fd, 0, SEEK_CUR));
+    if(strcmp(node->type, "directory") == 0){
+        write(fd, "CPTR=", 5);
+        printf("UPDATE CHILDREN\n");
+        while(childnodes < node->num_children){
+            printf("CHILD %d : %s\n", childnodes, node->children[childnodes]->path);
+            write(fd, "<", 1);
+            write(fd, &((node->children[childnodes])->inode_number), sizeof((node->children[childnodes])->inode_number));
+            write(fd, ">", 1);
+            childnodes++;
+        }
+        write(fd, "\0\n", 2);
+    }    
+    printf("CLOSE MARKER AT : %ld\n", lseek(fd, 0, SEEK_CUR));
     write(fd, CLOSE_MARKER, 2);
+    node->inode_number = freeblock;
     return;
 }
 
@@ -241,7 +192,6 @@ void serialize_metadata(FStree * temp){
 
 // Wrapper function for serialize_metadata
 void serialize_metadata_wrapper(FStree * node){
-    printf("HERE!\n");
     FStree * temp = node;
     meta_fd = open("fsmeta", O_RDWR , 0644);
     serialize_metadata(temp);
@@ -269,20 +219,3 @@ int closeblock(){
     resetmetafd();
     return 0;
 }
-
-/*
-int main(void){
-    insert_node("/\0");
-    insert_node("/a\0");
-    insert_node("/b\0");
-    insert_node("/b/c\0");
-    insert_node("/a/d\0");
-    insert_node("/b/c/e\0");
-    createdisk();
-    serialize_metadata_wrapper(root);
-    insert_node("/a/d/e");
-    FStree * snode = search_node("/a/d/e");
-    insert_file("/a/d/e/a.txt");
-    serialize_metadata_wrapper(snode);
-    return 0;
-}*/

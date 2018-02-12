@@ -22,16 +22,17 @@ struct FStree{
     char * path;                // Path upto node
     char * name;                // Name of the file / directory
     char * type;                // Type : "directory" or "file"
-    mode_t permissions;		// Permissions 
-    uid_t user_id;		// userid
-    gid_t group_id;		// groupid
+    mode_t permissions;		    // Permissions 
+    uid_t user_id;		        // userid
+    gid_t group_id;		        // groupid
     int num_children;           // Number of children nodes
-    int num_files;		// Number of files
+    int num_files;		        // Number of files
     time_t a_time;
     time_t m_time;
     time_t c_time;
     time_t b_time;
     off_t size;
+    unsigned long int inode_number;
     struct FStree * parent;     // Pointer to parent node
     struct FStree ** children;  // Pointers to children nodes
     struct FSfile ** fchildren; // Pointers to files in the directory

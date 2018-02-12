@@ -41,7 +41,8 @@ void serialize_metadata(FStree * temp);
 void serialize_metadata_wrapper(FStree * node);
 int openblock();
 int closeblock();
-int get_parent_block(int fd, FStree * node, int child_blocknumber);
-void updatechildren(int fd, int parent_blocknumber, FStree * node, int child_blocknumber);
-
+unsigned long int get_parent_block(int fd, FStree * node, int child_blocknumber);
+unsigned long int get_chained_meta_block(int fd, unsigned long int parent_blocknumber, unsigned long int child_blocknumber);
+int update_parent_node_wrapper(FStree * node);
+int update_parent_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
 #endif
