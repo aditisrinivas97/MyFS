@@ -80,10 +80,6 @@ int do_mkdir(const char * path, mode_t x){
 	
 int do_rmdir(const char * path){
 	printf("[rmdir] called!\n");
-	FStree * node = search_node((char *)path);
-	if(node != NULL){
-		delete_metadata_block(node->inode_number);
-	}
 	delete_node(path);
 	return 0;
 }

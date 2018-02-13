@@ -20,8 +20,6 @@
 #define OPEN_MARKER "{\n"
 #define CLOSE_MARKER "}\n"
 
-extern FStree * root;
-
 int data_fd;
 int meta_fd;
 
@@ -29,6 +27,9 @@ uint64_t datamap_size;
 uint8_t * datamap;
 uint64_t metamap_size;
 uint8_t * metamap;
+
+typedef struct FStree FStree;  
+typedef struct FSfile FSfile;
 
 void resetdatafd();
 void resetmetafd();
@@ -48,4 +49,5 @@ int update_parent_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * 
 void deserialize_metadata(unsigned long int blknumber);
 void deserialize_metadata_wrapper();
 void delete_metadata_block(unsigned long int blocknumber);
+int check_validity_block(unsigned long int blocknumber);
 #endif

@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include "fsdisk.h"
 
 struct FSfile{
 	char * path;

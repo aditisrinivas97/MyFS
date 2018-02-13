@@ -439,7 +439,9 @@ void delete_node(const char * path){
             else{
                 dir_node->parent->children = (FStree **)realloc(dir_node->parent->children,sizeof(FStree *) * dir_node->parent->num_children);
             }
-            free(dir_node);
+			delete_metadata_block(dir_node->inode_number);
+			update_parent_node_wrapper(dir_node->parent);
+			free(dir_node);
             return;
         }
     }

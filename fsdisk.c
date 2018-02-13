@@ -204,6 +204,14 @@ void serialize_metadata_wrapper(FStree * node){
     resetmetafd();
 }
 
+// Checks the validity of a given block
+int check_validity_block(unsigned long int blocknumber){
+    unsigned long int index = blocknumber / 8;
+    int bit_index = blocknumber % 8;
+    return ((metamap[index] >> bit_index)  & 0x01);
+}
+
+// Deletes a metadata block
 void delete_metadata_block(unsigned long int blocknumber){
     printf("DELETING BLOCK NUMBER : %lu\n", blocknumber);
     meta_fd = open("fsmeta", O_RDWR , 0644);
@@ -212,6 +220,7 @@ void delete_metadata_block(unsigned long int blocknumber){
     resetmetafd();
 }
 
+// Wrapper function for deseralize metadata
 void deserialize_metadata_wrapper(){
     meta_fd = open("fsmeta", O_RDWR , 0644);
     printf("LOADING BITMAP\n");
@@ -221,6 +230,7 @@ void deserialize_metadata_wrapper(){
     resetmetafd();
 }
 
+// Load the metadata into memory
 void deserialize_metadata(unsigned long int blknumber){
     if(root == NULL){
         printf("NULL\n");
@@ -395,30 +405,55 @@ void deserialize_metadata(unsigned long int blknumber){
                         for(i = 0; i < num_children; i++){
                             printf("%lu\t", children[i]); 
                         }
-                        load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
-                        printf("\n");
-                        pathlen = 1;
-                        typelen = 1;
-                        num_children = 0;
-                        free(type);
-                        free(path);
-                        free(children);
-                        path = (char *)calloc(sizeof(char), 1);
-                        type = (char *)calloc(sizeof(char), 1);
-                        children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
-                        inode = -1;
-                        permissions = 0;
-                        user_id = 0; 
-                        group_id = 0;
-                        a_time = 0;
-                        b_time = 0;
-                        c_time = 0;
-                        m_time = 0;
-                        size = 0;
-                        parent = 0;
-                        nblk = 0;
-                        for(i = 0; i < num_children; i++){
-                            deserialize_metadata(children[i]);
+                        if(check_validity_block(inode)){
+                            load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
+                            printf("\n");
+                            pathlen = 1;
+                            typelen = 1;
+                            num_children = 0;
+                            free(type);
+                            free(path);
+                            free(children);
+                            path = (char *)calloc(sizeof(char), 1);
+                            type = (char *)calloc(sizeof(char), 1);
+                            children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+                            inode = -1;
+                            permissions = 0;
+                            user_id = 0; 
+                            group_id = 0;
+                            a_time = 0;
+                            b_time = 0;
+                            c_time = 0;
+                            m_time = 0;
+                            size = 0;
+                            parent = 0;
+                            nblk = 0;
+                            for(i = 0; i < num_children; i++){
+                                deserialize_metadata(children[i]);
+                            }
+                        }
+                        else{
+                            printf("\n");
+                            pathlen = 1;
+                            typelen = 1;
+                            num_children = 0;
+                            free(type);
+                            free(path);
+                            free(children);
+                            path = (char *)calloc(sizeof(char), 1);
+                            type = (char *)calloc(sizeof(char), 1);
+                            children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+                            inode = -1;
+                            permissions = 0;
+                            user_id = 0; 
+                            group_id = 0;
+                            a_time = 0;
+                            b_time = 0;
+                            c_time = 0;
+                            m_time = 0;
+                            size = 0;
+                            parent = 0;
+                            nblk = 0;
                         }
                         break;
                 }
