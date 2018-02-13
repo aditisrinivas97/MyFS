@@ -33,7 +33,7 @@ uint8_t * metamap;
 void resetdatafd();
 void resetmetafd();
 void writebitmap(int fd, uint8_t * bitmap, uint64_t bitmap_size);
-void loadbitmap(int fd, uint8_t ** bitmap, uint64_t bitmap_size);
+void loadbitmap(int fd, uint8_t ** bitmap, uint64_t * bitmap_size);
 int createdisk();
 unsigned long int find_free_block(uint8_t * bitmap, uint64_t bitmap_size);
 void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
@@ -45,4 +45,6 @@ unsigned long int get_parent_block(int fd, FStree * node, int child_blocknumber)
 unsigned long int get_chained_meta_block(int fd, unsigned long int parent_blocknumber, unsigned long int child_blocknumber);
 int update_parent_node_wrapper(FStree * node);
 int update_parent_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
+void deserialize_metadata(unsigned long int blknumber);
+void deserialize_metadata_wrapper();
 #endif

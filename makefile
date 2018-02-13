@@ -1,7 +1,7 @@
 username = $(shell whoami)
 files = fsmain.c fsoperations.c fstree.c bitmap.c fsdisk.c
 opflag = -o fs
-flags = `pkg-config fuse --cflags --libs` -DFUSE_USE_VERSION=25 -lm
+flags = `pkg-config fuse --cflags --libs` -DFUSE_USE_VERSION=25 -lm -g
 
 all: run
 
@@ -9,7 +9,7 @@ run: compile
 	./fs -f /home/$(username)/Desktop/mountpoint
 
 debugrun: dcompile
-	./fs -d -f -s /home/$(username)/Desktop/mountpoint
+	valgrind --track-origins=yes ./fs -d -f -s /home/$(username)/Desktop/mountpoint
 
 compile: checkdir
 	gcc -Wall $(files) $(opflag) $(flags)

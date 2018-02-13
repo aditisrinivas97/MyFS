@@ -238,8 +238,8 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		memset((my_file->data) + offset, 0, size);
 		memcpy((my_file->data) + offset, buf, size);
 		my_file_tree_node->size = size + offset;
-		printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
-		printf("content is : %s and len is:%d\n", my_file->data,(int)strlen(my_file->data));
+		//printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
+		//printf("content is : %s and len is:%d\n", my_file->data,(int)strlen(my_file->data));
 		return size;
 	}
 		return -ENOENT;

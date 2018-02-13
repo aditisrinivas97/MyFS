@@ -33,9 +33,9 @@ static struct fuse_operations operations = {
 };
 
 int main( int argc, char *argv[] ){
-    char * rpath = "/";
-    insert_node(rpath);
-    createdisk();
-    serialize_metadata_wrapper(root);
+    int ret = createdisk();
+    if(ret){
+        serialize_metadata_wrapper(root);
+    }
     return fuse_main(argc, argv, &operations);
 }

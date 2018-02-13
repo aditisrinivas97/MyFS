@@ -17,11 +17,11 @@ char * extract_path(char ** copy_path){
             }
             break;
         }
-        tempstr = (char *)malloc(sizeof(char) * (retlen + 1));
+        tempstr = (char *)calloc(sizeof(char) , (retlen + 2));
         strcpy(tempstr, retval);
         retlen += 1;
         tempstr[retlen - 1] = temp;
-        retval = (char *)realloc(retval, sizeof(char) * (retlen));
+        retval = (char *)realloc(retval, sizeof(char) * (retlen + 2));
         strcpy(retval, tempstr);
         (*copy_path)++;
         temp = **(copy_path);
@@ -61,11 +61,11 @@ char * extract_dir(char ** copy_path){
     //printf("BEGIN EXTRACT : %s\n", *copy_path);
     temp = **(copy_path);
     while(temp != '/'){    
-        tempstr = (char *)malloc(sizeof(char) * (retlen + 1));
+        tempstr = (char *)calloc(sizeof(char), (retlen + 2));
         strcpy(tempstr, retval);
         retlen += 1;
         tempstr[retlen - 1] = temp;
-        retval = (char *)realloc(retval, sizeof(char) * (retlen));
+        retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
         strcpy(retval, tempstr);
         (*copy_path)++;
         temp = **(copy_path);
@@ -78,8 +78,6 @@ char * extract_dir(char ** copy_path){
     retval[retlen] = '\0';
     retval = reverse(retval, 0);        // reverse the content of the return value. E.g if dir was abc, retval would be cba and would need to be reversed.
     *(copy_path) = reverse(*(copy_path), 0);    // reverse the orginial path
-   ////printf("done reversing\n");
-    //printf("END OF EXTRACT DIR : %s %s\n", *copy_path, retval);
     return retval;
 }
 
@@ -91,11 +89,10 @@ FStree * search_node(char * path){
     int flag = 0, i = 0;
     if(path[0] == '/'){
         path++;
-        //printf("SEARCH %s\n",path);
     }
     while(temp != NULL){
         curr_node = extract_path(&path);
-	//printf("\n curr_node =%s and no:%s\n",curr_node,temp->name);
+		//printf("\n curr_node = %s and node is : %s\n\n", curr_node, temp->name);
         if(strlen(curr_node) == 0){
             break;
         }
@@ -108,7 +105,6 @@ FStree * search_node(char * path){
             }
         }
         if(!flag){
-		//printf("ewfjhywejk");
             return NULL;
         }
         else{
@@ -143,7 +139,7 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
     new->a_time = time(&t);
     new->m_time = time(&t);
     new->b_time = time(&t);
-	new->inode_number = -1;
+	new->inode_number = 0;
     new->num_children = 0;
     new->parent = parent;
     new->children = NULL;
@@ -155,7 +151,9 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
 
 // Function to insert a node into the FS tree
 void insert_node(const char * path){
+	printf("INSERT NODE : %s", path);
     if(root == NULL){
+		printf("CREATING ROOT");
         root = init_node("/", "root", NULL,1);
         return;
     }
@@ -179,11 +177,11 @@ void insert_node(const char * path){
         else{
             dir_node = search_node(copy_path);  // get the parent directory's address
             if(dir_node != NULL){
-		if(dir_node->parent!=NULL){
-			//printf("\nparent is:%s",dir_node->parent->name);
-			dir_node->c_time=time(NULL);
+				if(dir_node->parent!=NULL){
+				//printf("\nparent is:%s",dir_node->parent->name);
+				dir_node->c_time=time(NULL);
 	    		dir_node->m_time=time(NULL);
-		}
+				}
                 //printf("Nesting directory!\n");
                 dir_node->num_children++;
                 //printf("Number of children : %d\n", dir_node->num_children);
@@ -198,6 +196,60 @@ void insert_node(const char * path){
             }
         }
         return;
+    }
+    return;
+}
+
+
+//Loads a node from disk file
+void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_time, time_t lm_time, time_t la_time, time_t lb_time, unsigned long int inode, off_t size){
+    if(root == NULL){
+		printf("CREATING ROOT NODE!\n");
+        root = init_node("/", "root", NULL, 1);
+		root->group_id = groupid;
+		root->user_id = userid;
+		root->c_time = lc_time;
+		root->a_time = la_time;
+		root->m_time = lm_time;
+		root->b_time = lb_time;
+		root->inode_number = inode;
+		root->size = size;
+    }
+    else{
+        char * copy_path = (char *)path;
+        char * dir = extract_dir(&copy_path);
+        FStree * dir_node = NULL;
+        if(strlen(copy_path) == 1){     // if the new directory belongs to the root node
+            root->num_children++;
+            if(root->children == NULL){
+                root->children = (FStree **)malloc(sizeof(FStree *));
+                root->children[0] = init_node(path, dir, root,1);
+            }
+            else{
+                root->children = (FStree **)realloc(root->children, sizeof(FStree *) * root->num_children);
+                root->children[root->num_children - 1] = init_node(path, dir, root,1);
+            }
+        }
+        else{
+            dir_node = search_node(copy_path);  // get the parent directory's address
+            if(dir_node != NULL){
+				if(dir_node->parent!=NULL){
+					dir_node->c_time=time(NULL);
+					dir_node->m_time=time(NULL);
+				}
+                dir_node->num_children++;
+                dir_node->children = (FStree **)realloc(dir_node->children, sizeof(FStree *) * dir_node->num_children);
+                dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node,1);
+            }
+			dir_node->children[dir_node->num_children - 1]->group_id = groupid;
+			dir_node->children[dir_node->num_children - 1]->user_id = userid;
+			dir_node->children[dir_node->num_children - 1]->c_time = lc_time;
+			dir_node->children[dir_node->num_children - 1]->a_time = la_time;
+			dir_node->children[dir_node->num_children - 1]->m_time = lm_time;
+			dir_node->children[dir_node->num_children - 1]->b_time = lb_time;
+			dir_node->children[dir_node->num_children - 1]->inode_number = inode;
+			dir_node->children[dir_node->num_children - 1]->size = size;
+        }
     }
     return;
 }
@@ -264,7 +316,7 @@ void insert_file(const char * path){
             	}
             	else{
                 	//printf("No such file or directory in the given path!\n");
-		}
+			}
 	}
 	//printf("\nINSERTION OF FILE INTO TREE DONE\n");
 }
