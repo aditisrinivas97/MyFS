@@ -204,6 +204,12 @@ void serialize_metadata_wrapper(FStree * node){
     resetmetafd();
 }
 
+void delete_metadata_block(int blocknumber){
+    meta_fd = open("fsmeta", O_RDWR , 0644);
+    clear_bit(&metamap, blocknumber);
+    resetmetafd();
+}
+
 void deserialize_metadata_wrapper(){
     meta_fd = open("fsmeta", O_RDWR , 0644);
     printf("LOADING BITMAP\n");

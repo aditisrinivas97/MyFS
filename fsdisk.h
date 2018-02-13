@@ -47,4 +47,5 @@ int update_parent_node_wrapper(FStree * node);
 int update_parent_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
 void deserialize_metadata(unsigned long int blknumber);
 void deserialize_metadata_wrapper();
+void delete_metadata_block(int blocknumber);
 #endif

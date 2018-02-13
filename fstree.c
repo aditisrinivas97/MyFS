@@ -390,34 +390,26 @@ void delete_node(const char * path){
         FStree * dir_node = NULL;
         int i, j;
         if(strlen(copy_path) == 1){
-            //printf("Cannot delete root directory!\n");  // do not allow deletion of root directory
+            printf("Cannot delete root directory!\n");  // do not allow deletion of root directory
             return;
         }
         else{
             //printf("Search for %s\n", copy_path);
             dir_node = search_node(copy_path);  // get the directory's address
-	    dir_node->parent->c_time=time(&t);
-	    dir_node->parent->m_time=time(&t);
-            //printf("After search : %s\n", copy_path);
-            //printf("Node name : %s\n", dir_node->name);
-            //printf("Node path : %s\n", dir_node->path);
-            //printf("Node children : %d\n", dir_node->num_children);
+	    	dir_node->parent->c_time=time(&t);
+	    	dir_node->parent->m_time=time(&t);
             if(dir_node->children != NULL){
                 for(i = dir_node->num_children - 1; i >= 0; i--){
-                    //printf("Delete path : %s\n", dir_node->children[i]->path);
                     if(strcmp(dir_node->type, "directory") == 0){
                         delete_node((const char *)dir_node->children[i]->path);       // recursively delete all the sub directories
                     }
                 }
             }
-            ////printf("node name : %s \n", dir_node->name);
-
             while(dir_node->num_files > 0){
                 delete_file(dir_node->fchildren[dir_node->num_files - 1]->path);
             }
             for(i = 0; i < dir_node->parent->num_children; i++){
                 if(dir_node->parent->children[i] == dir_node){
-			//printf("\n@@@@@@@@\n");
                     for(j = i; j < dir_node->parent->num_children - 1; j++){
                         dir_node->parent->children[j] = dir_node->parent->children[j+1];
                     }
