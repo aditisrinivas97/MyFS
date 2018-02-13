@@ -224,10 +224,26 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
             if(root->children == NULL){
                 root->children = (FStree **)malloc(sizeof(FStree *));
                 root->children[0] = init_node(path, dir, root,1);
+				root->children[0]->group_id = groupid;
+				root->children[0]->user_id = userid;
+				root->children[0]->c_time = lc_time;
+				root->children[0]->a_time = la_time;
+				root->children[0]->m_time = lm_time;
+				root->children[0]->b_time = lb_time;
+				root->children[0]->inode_number = inode;
+				root->children[0]->size = size;
             }
             else{
                 root->children = (FStree **)realloc(root->children, sizeof(FStree *) * root->num_children);
                 root->children[root->num_children - 1] = init_node(path, dir, root,1);
+				root->children[root->num_children - 1]->group_id = groupid;
+				root->children[root->num_children - 1]->user_id = userid;
+				root->children[root->num_children - 1]->c_time = lc_time;
+				root->children[root->num_children - 1]->a_time = la_time;
+				root->children[root->num_children - 1]->m_time = lm_time;
+				root->children[root->num_children - 1]->b_time = lb_time;
+				root->children[root->num_children - 1]->inode_number = inode;
+				root->children[root->num_children - 1]->size = size;
             }
         }
         else{

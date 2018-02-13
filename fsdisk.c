@@ -204,9 +204,11 @@ void serialize_metadata_wrapper(FStree * node){
     resetmetafd();
 }
 
-void delete_metadata_block(int blocknumber){
+void delete_metadata_block(unsigned long int blocknumber){
+    printf("DELETING BLOCK NUMBER : %lu\n", blocknumber);
     meta_fd = open("fsmeta", O_RDWR , 0644);
     clear_bit(&metamap, blocknumber);
+    writebitmap(meta_fd, metamap, metamap_size);
     resetmetafd();
 }
 
@@ -214,7 +216,7 @@ void deserialize_metadata_wrapper(){
     meta_fd = open("fsmeta", O_RDWR , 0644);
     printf("LOADING BITMAP\n");
     loadbitmap(meta_fd, &metamap, &metamap_size);
-    print_bitmap(metamap, metamap_size);
+    //print_bitmap(metamap, metamap_size);
     deserialize_metadata(1);
     resetmetafd();
 }
