@@ -98,20 +98,21 @@ unsigned long int get_parent_block(int fd, FStree * node, int child_blocknumber)
     return parent_inode;
 }
 
-// Wrapper function for update_parent_node function
-int update_parent_node_wrapper(FStree * node){
+// Wrapper function for update_node function
+int update_node_wrapper(FStree * node){
     if(meta_fd < 0){
         meta_fd = open("fsmeta", O_RDWR , 0644);
     }
     lseek(meta_fd, (node->inode_number * BLOCK_SIZE), SEEK_SET);
-    update_parent_node(meta_fd, metamap, metamap_size, node);
+    update_node(meta_fd, metamap, metamap_size, node);
     return 0;
 }
 
 // Write the changes in parent node to disk
-int update_parent_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
+int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
     clear_bit(&bitmap, node->inode_number);
     write_diskfile(fd, bitmap, bitmap_size, node);
+    writebitmap(meta_fd, metamap, metamap_size);
     return 0;
 }
 

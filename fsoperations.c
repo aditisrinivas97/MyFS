@@ -72,7 +72,7 @@ int do_mkdir(const char * path, mode_t x){
 	if(node != NULL){
 		serialize_metadata_wrapper(node);
 		if(node->parent != NULL){
-			update_parent_node_wrapper(node->parent);
+			update_node_wrapper(node->parent);
 		}
 	}
 	return 0;
