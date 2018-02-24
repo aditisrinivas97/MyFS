@@ -6,7 +6,6 @@ int do_getattr(const char *path, struct stat *st){
 	
 	char * copy_path = (char *)path;
 	FStree * dir_node = NULL;
-	FSfile * file_node = NULL;
 	if(strlen(copy_path) > 1){
 		dir_node = search_node(copy_path);
 	}
@@ -23,8 +22,8 @@ int do_getattr(const char *path, struct stat *st){
 		}
 		 else{
 		 	st->st_nlink = 1;
-			file_node=find_file(path);
-		 	st->st_size = file_node->size;
+			//file_node=find_file(path);
+		 	st->st_size = 0;
 		 }
 	 }
 		
@@ -87,6 +86,15 @@ int do_rmdir(const char * path){
 int do_mknod(const char * path, mode_t x, dev_t y){
 	printf("[create file] called! and path is:%s\n",path);
 	insert_file(path);
+	FStree * node = search_node((char *)path);
+	//FSfile * fnode = find_file((char *)path);
+	if(node != NULL){
+		serialize_metadata_wrapper(node);
+		if(node->parent != NULL){
+			printf("\n in mknod i a :%s",node->name);
+			update_node_wrapper(node->parent);
+		}
+	}
 	return 0;
 }
 	
@@ -198,6 +206,7 @@ int do_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_f
 		my_file_tree_node = search_node((char *)path);	
 		my_file_tree_node->a_time = time(NULL);
 		len = strlen(my_file->data);
+		printf("in read initial len:%d and %s",(int)len,my_file->data);
 		if(len == 0){
 			return 0;
 		}
@@ -237,8 +246,9 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		memset((my_file->data) + offset, 0, size);
 		memcpy((my_file->data) + offset, buf, size);
 		my_file_tree_node->size = size + offset;
-		//printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
-		//printf("content is : %s and len is:%d\n", my_file->data,(int)strlen(my_file->data));
+		printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
+		printf("content is : %s and len is:%d\n", my_file->data,(int)size);
+		memset((char *)buf, 0, strlen(buf));
 		return size;
 	}
 		return -ENOENT;

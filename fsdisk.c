@@ -5,7 +5,7 @@ uint64_t datamap_size = 32768;
 uint8_t * datamap = NULL;
 uint64_t metamap_size = 32768;
 uint8_t * metamap = NULL;
-
+int flag=0;
 // Reset file descriptors - signifies that data file are closed
 void resetdatafd(){
     close(data_fd);
@@ -100,6 +100,7 @@ unsigned long int get_parent_block(int fd, FStree * node, int child_blocknumber)
 
 // Wrapper function for update_node function
 int update_node_wrapper(FStree * node){
+    printf("\nIn update :%s",node->name);
     if(meta_fd < 0){
         meta_fd = open("fsmeta", O_RDWR , 0644);
     }
@@ -133,10 +134,12 @@ void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * nod
     write(fd, "PATH=", 5);
     write(fd, node->path, (int)strlen(node->path));
     write(fd, "\0\n", 2);
+    printf("BLOCK NUMBER : %lu\n", freeblock);
     write(fd, "INOD=", 5);
     write(fd, &(freeblock), sizeof(freeblock));
     write(fd, "\0\n", 2);
     write(fd, "TYPE=", 5);
+    printf("\nmy type=%s and %s",node->name,node->type);
     write(fd, node->type, (int)strlen(node->type));
     write(fd, "\0\n", 2);
     write(fd, "PERM=", 5);
@@ -169,23 +172,23 @@ void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * nod
     write(fd, "NBLK=", 5);
     write(fd, &(init_next_block), sizeof(init_next_block));
     write(fd, "\0\n", 2);
-    if(strcmp(node->type, "directory") == 0){
-        write(fd, "CPTR=", 5);
-        printf("UPDATE CHILDREN\n");
-        while(childnodes < node->num_children){
+    write(fd, "CPTR=", 5);
+    printf("UPDATE CHILDREN\n");
+    while(childnodes < node->num_children){
             printf("CHILD %d %lu %lu : %s\n", childnodes, node->children[childnodes]->inode_number, sizeof(((node->children[childnodes])->inode_number)), node->children[childnodes]->path);
             write(fd, "<", 1);
             write(fd, &((node->children[childnodes])->inode_number), sizeof((node->children[childnodes])->inode_number));
             write(fd, ">", 1);
             childnodes++;
-        }
-        write(fd, "\0\n", 2);
-    }    
+     }
+    write(fd, "\0\n", 2);
+    
     printf("CLOSE MARKER AT : %ld\n", lseek(fd, 0, SEEK_CUR));
     write(fd, CLOSE_MARKER, 2);
     node->inode_number = freeblock;
     return;
 }
+
 
 // Write metadata to disk file
 void serialize_metadata(FStree * temp){
@@ -204,6 +207,7 @@ void serialize_metadata_wrapper(FStree * node){
     writebitmap(meta_fd, metamap, metamap_size);
     resetmetafd();
 }
+
 
 // Checks the validity of a given block
 int check_validity_block(unsigned long int blocknumber){
@@ -241,6 +245,7 @@ void deserialize_metadata(unsigned long int blknumber){
     int pathlen = 1;
     int typelen = 1;
     int num_children = 0;
+    //int num_files = 0;
     mode_t permissions = 0;
     uid_t user_id = 0;
     gid_t group_id = 0;
@@ -255,6 +260,7 @@ void deserialize_metadata(unsigned long int blknumber){
     char * path = (char *)calloc(sizeof(char), 1);
     char * type = (char *)calloc(sizeof(char), 1);
     unsigned long int * children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+    //unsigned long int * fchildren = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
     lseek(meta_fd, blknumber * BLOCK_SIZE, SEEK_SET);
     int readbytes = read(meta_fd, &buffer, 1);
     printf("READING\n");
@@ -390,72 +396,138 @@ void deserialize_metadata(unsigned long int blknumber){
                         printf("CREATION TIME FOUND : %s", ctime(&c_time));
                         break;
                     case 'P':
-                        while(buffer[0] != '\0'){
-                            printf("CHECK THIS : \n\n %c\n\n", buffer[0]);
-                            if(buffer[0] == '<'){
-                                printf("%d\n", num_children);
-                                num_children++;
-                                children = (unsigned long int *)realloc(children, sizeof(unsigned long int) * (num_children));
-                                read(meta_fd, &children[num_children - 1], sizeof(children[num_children - 1]));
-                                printf("\n\nCHECK : %lu\t", children[num_children - 1]); 
-                            }
-                            printf("\n\n");
-                            read(meta_fd, &buffer, 1);
-                        }
-                        printf("CHILDREN FOUND : ");
-                        for(i = 0; i < num_children; i++){
-                            printf("%lu\t", children[i]); 
-                        }
-                        if(check_validity_block(inode)){
+                        printf("\n!!path is:%s\n",path);
+                         if(strcmp(type,"file")==0){
+			   if(check_validity_block(inode)){
+                            //printf("Check valid:%d and %s",inode,path);
+			    //printf("inode:%d and valid:%d",inode,check_validity_block(inode));
                             load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
+			    printf("valid path:%s",path);
                             printf("\n");
-                            pathlen = 1;
-                            typelen = 1;
-                            num_children = 0;
-                            free(type);
-                            free(path);
-                            free(children);
-                            path = (char *)calloc(sizeof(char), 1);
-                            type = (char *)calloc(sizeof(char), 1);
-                            children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
-                            inode = -1;
-                            permissions = 0;
-                            user_id = 0; 
-                            group_id = 0;
-                            a_time = 0;
-                            b_time = 0;
-                            c_time = 0;
-                            m_time = 0;
-                            size = 0;
-                            parent = 0;
-                            nblk = 0;
-                            for(i = 0; i < num_children; i++){
-                                deserialize_metadata(children[i]);
-                            }
-                        }
-                        else{
-                            printf("\n");
-                            pathlen = 1;
-                            typelen = 1;
-                            num_children = 0;
-                            free(type);
-                            free(path);
-                            free(children);
-                            path = (char *)calloc(sizeof(char), 1);
-                            type = (char *)calloc(sizeof(char), 1);
-                            children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
-                            inode = -1;
-                            permissions = 0;
-                            user_id = 0; 
-                            group_id = 0;
-                            a_time = 0;
-                            b_time = 0;
-                            c_time = 0;
-                            m_time = 0;
-                            size = 0;
-                            parent = 0;
-                            nblk = 0;
-                        }
+		            pathlen = 1;
+		            typelen = 1;
+		            num_children = 0;
+		            //num_files = 0;
+		            free(type);
+		            free(path);
+		            free(children);
+		            path = (char *)calloc(sizeof(char), 1);
+		            type = (char *)calloc(sizeof(char), 1);
+		            children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+			    //fchildren = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+		            inode = -1;
+		            permissions = 0;
+		            user_id = 0; 
+		            group_id = 0;
+		            a_time = 0;
+		            b_time = 0;
+		            c_time = 0;
+		            m_time = 0;
+		            size = 0;
+		            parent = 0;
+		            nblk = 0;
+			}
+			 else{
+		                    printf("\n");
+		                    pathlen = 1;
+		                    typelen = 1;
+		                    num_children = 0;
+				    //num_files = 0;
+		                    free(type);
+		                    free(path);
+		                    free(children);
+		                    path = (char *)calloc(sizeof(char), 1);
+		                    type = (char *)calloc(sizeof(char), 1);
+		                    children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+				    //fchildren = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+		                    inode = -1;
+		                    permissions = 0;
+		                    user_id = 0; 
+		                    group_id = 0;
+		                    a_time = 0;
+		                    b_time = 0;
+		                    c_time = 0;
+		                    m_time = 0;
+		                    size = 0;
+		                    parent = 0;
+		                    nblk = 0;
+		                }
+			}
+                        else
+                        {
+		                while(buffer[0] != '\0'){
+		                    printf("CHECK THIS : \n\n %c\n\n", buffer[0]);
+		                    if(buffer[0] == '<'){
+		                        printf("%d\n", num_children);
+		                        num_children++;
+		                        children = (unsigned long int *)realloc(children, sizeof(unsigned long int) * (num_children));
+		                        read(meta_fd, &children[num_children - 1], sizeof(children[num_children - 1]));
+		                        printf("\n\nCHECK : %lu\t", children[num_children - 1]); 
+		                    }
+		                    printf("\n\n");
+		                    read(meta_fd, &buffer, 1);
+		                }
+		                printf("CHILDREN FOUND : ");
+		                for(i = 0; i < num_children; i++){
+		                    printf("%lu\t", children[i]); 
+		                }
+		                if(check_validity_block(inode)){
+				    //printf("Check valid:%d",inode);
+		                    load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
+				    printf("valid path:%s",path);
+		                    printf("\n");
+		                    pathlen = 1;
+		                    typelen = 1;
+		                    num_children = 0;
+				    //num_files = 0;
+		                    free(type);
+		                    free(path);
+		                    free(children);
+		                    path = (char *)calloc(sizeof(char), 1);
+		                    type = (char *)calloc(sizeof(char), 1);
+		                    children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+				    //fchildren = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+		                    inode = -1;
+		                    permissions = 0;
+		                    user_id = 0; 
+		                    group_id = 0;
+		                    a_time = 0;
+		                    b_time = 0;
+		                    c_time = 0;
+		                    m_time = 0;
+		                    size = 0;
+		                    parent = 0;
+		                    nblk = 0;
+				    for(i = 0; i < num_children; i++){
+				        deserialize_metadata(children[i]);
+				    }
+		                }
+		                else{
+		                    printf("\n");
+		                    pathlen = 1;
+		                    typelen = 1;
+		                    num_children = 0;
+				    //num_files = 0;
+		                    free(type);
+		                    free(path);
+		                    free(children);
+		                    path = (char *)calloc(sizeof(char), 1);
+		                    type = (char *)calloc(sizeof(char), 1);
+		                    children = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+				    //fchildren = (unsigned long int *)calloc(sizeof(unsigned long int), 1);
+		                    inode = -1;
+		                    permissions = 0;
+		                    user_id = 0; 
+		                    group_id = 0;
+		                    a_time = 0;
+		                    b_time = 0;
+		                    c_time = 0;
+		                    m_time = 0;
+		                    size = 0;
+		                    parent = 0;
+		                    nblk = 0;
+		                }
+			}
                         break;
                 }
                 break;

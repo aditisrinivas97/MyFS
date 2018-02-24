@@ -92,8 +92,10 @@ FStree * search_node(char * path){
     }
     while(temp != NULL){
         curr_node = extract_path(&path);
-		//printf("\n curr_node = %s and node is : %s\n\n", curr_node, temp->name);
+	printf("\n curr_node = %s and node is : %s\n\n", curr_node, temp->name);
+	printf("\n curr_node = %s and children : %d\n\n", curr_node, temp->num_children);
         if(strlen(curr_node) == 0){
+		printf("\nin break");
             break;
         }
         for(i = 0; i < temp->num_children; i++){
@@ -111,7 +113,8 @@ FStree * search_node(char * path){
             flag = 0;
         }
     }
-    //printf("Returning from search!\n");
+    if(retval!=NULL)
+    printf("Returning from search and val:%s and %s and %3o!\n",retval->path,retval->type,retval->permissions);
     return retval;
 }
 
@@ -203,6 +206,7 @@ void insert_node(const char * path){
 
 //Loads a node from disk file
 void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_time, time_t lm_time, time_t la_time, time_t lb_time, unsigned long int inode, off_t size){
+    printf("\ntype is :%s",type);
     if(root == NULL){
 		printf("CREATING ROOT NODE!\n");
         root = init_node("/", "root", NULL, 1);
@@ -218,24 +222,56 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
     else{
         char * copy_path = (char *)path;
         char * dir = extract_dir(&copy_path);
+	char * tdir = (char *)calloc(sizeof(char), strlen(dir));
+    	strcpy(tdir,dir);
+        printf("\nInti path:%s and tdir:%s\n",path,tdir);
         FStree * dir_node = NULL;
         if(strlen(copy_path) == 1){     // if the new directory belongs to the root node
             root->num_children++;
             if(root->children == NULL){
                 root->children = (FStree **)malloc(sizeof(FStree *));
-                root->children[0] = init_node(path, dir, root,1);
-				root->children[0]->group_id = groupid;
-				root->children[0]->user_id = userid;
-				root->children[0]->c_time = lc_time;
-				root->children[0]->a_time = la_time;
-				root->children[0]->m_time = lm_time;
-				root->children[0]->b_time = lb_time;
-				root->children[0]->inode_number = inode;
-				root->children[0]->size = size;
+		if(strcmp(type,"directory")==0){
+                	root->children[0] = init_node(path, dir, root,1);
+			root->children[0]->permissions=S_IFDIR | 0755;
+			root->children[0]->type="directory";
+		}
+		else{	root->num_files++;
+			root->children[0] = init_node(path, dir, root,2);
+			root->children[0]->permissions=S_IFREG | 0644;
+			printf("\n***path :%s and dir:%s",path,tdir);
+			root->fchildren = (FSfile **)malloc(sizeof(FSfile *));
+			root->fchildren[0] = init_file(path,tdir);
+			root->children[0]->type="file";
+		}
+		
+		root->children[0]->group_id = groupid;
+		root->children[0]->user_id = userid;
+		root->children[0]->c_time = lc_time;
+		root->children[0]->a_time = la_time;
+		root->children[0]->m_time = lm_time;
+		root->children[0]->b_time = lb_time;
+		root->children[0]->inode_number = inode;
+		root->children[0]->size = size;
             }
             else{
+		printf("in roooo");
                 root->children = (FStree **)realloc(root->children, sizeof(FStree *) * root->num_children);
-                root->children[root->num_children - 1] = init_node(path, dir, root,1);
+		printf("\nreallocte");
+		if(strcmp(type,"directory")==0){
+                	root->children[root->num_children - 1] = init_node(path, dir, root,1);
+			root->children[root->num_children - 1]->permissions = S_IFDIR | 0755;
+			root->children[root->num_children - 1]->type = "directory";
+		}
+		else{
+			root->num_files++;
+			printf("\nloading file and %s\n",path);
+			root->children[root->num_children - 1] = init_node(path, dir, root,2);
+			root->children[root->num_children - 1]->permissions= S_IFREG | 0644;
+			root->fchildren = (FSfile **)realloc(root->fchildren, sizeof(FSfile *) * root->num_files);
+			root->fchildren[root->num_files - 1] = init_file(path,tdir);
+			root->children[root->num_children - 1]->type = "file";
+		}
+								
 				root->children[root->num_children - 1]->group_id = groupid;
 				root->children[root->num_children - 1]->user_id = userid;
 				root->children[root->num_children - 1]->c_time = lc_time;
@@ -255,8 +291,20 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
 				}
                 dir_node->num_children++;
                 dir_node->children = (FStree **)realloc(dir_node->children, sizeof(FStree *) * dir_node->num_children);
-                dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node,1);
+		if(strcmp(type,"directory")==0){
+                	dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node,1);
+			dir_node->children[dir_node->num_children - 1] ->permissions = S_IFDIR | 0755;
+			dir_node->children[dir_node->num_children - 1]->type = "directory";
+		}
+		else{	dir_node->num_files++;
+			dir_node->children[dir_node->num_children - 1] = init_node(path, dir, dir_node,2);
+			dir_node->children[dir_node->num_children - 1] ->permissions = S_IFREG | 0644;
+			dir_node->fchildren = (FSfile **)realloc(dir_node->fchildren, sizeof(FSfile *) * dir_node->num_files);
+			dir_node->fchildren[dir_node->num_files - 1] = init_file(path,dir);
+			dir_node->children[dir_node->num_children - 1]->type = "file";
+		}
             }
+			
 			dir_node->children[dir_node->num_children - 1]->group_id = groupid;
 			dir_node->children[dir_node->num_children - 1]->user_id = userid;
 			dir_node->children[dir_node->num_children - 1]->c_time = lc_time;
@@ -280,7 +328,6 @@ FSfile * init_file(const char * path,char * name){
 	new->data = (char *)calloc(sizeof(char), 1);
 	new->size=0;
 	new->offset=0;
-	//new->c_time=time(&t);
 	return new;
 }
 
@@ -345,6 +392,9 @@ void delete_file(const char *path){
 	else{	
 		int i,j;
 		FStree * parent_dir_node = NULL;
+		FStree * file_tree_node = search_node((char *)path);
+		int file_ino;
+		file_ino = file_tree_node->inode_number;
 		FSfile * del_file = NULL;
 		char * copy_path = (char *)path;
 		char * name = extract_dir(&copy_path);
@@ -389,9 +439,10 @@ void delete_file(const char *path){
         else{
             parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
         }
-		
-		//printf("\nFile %s deleted",name);
-		free(del_file);
+	delete_metadata_block(file_ino);
+	update_node_wrapper(parent_dir_node);
+	//printf("\nFile %s deleted",name);
+	free(del_file);
     }
 }
 
