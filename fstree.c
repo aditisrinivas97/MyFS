@@ -209,7 +209,7 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
     printf("\ntype is :%s",type);
     if(root == NULL){
 		printf("CREATING ROOT NODE!\n");
-        root = init_node("/", "root", NULL, 1);
+        	root = init_node("/", "root", NULL, 1);
 		root->group_id = groupid;
 		root->user_id = userid;
 		root->c_time = lc_time;
@@ -321,15 +321,24 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
 //function to intialise a file node
 FSfile * init_file(const char * path,char * name){
 	FSfile * new = (FSfile *)malloc(sizeof(FSfile));
-    new->path = (char *)calloc(sizeof(char), strlen(path) + 1);
-    new->name = (char *)calloc(sizeof(char), strlen(name) + 1);
-    strcpy(new->path, (char *)path);
-    strcpy(new->name, (char *)name);
+    	new->path = (char *)calloc(sizeof(char), strlen(path) + 1);
+    	new->name = (char *)calloc(sizeof(char), strlen(name) + 1);
+    	strcpy(new->path, (char *)path);
+    	strcpy(new->name, (char *)name);
 	new->data = (char *)calloc(sizeof(char), 1);
 	new->size=0;
 	new->offset=0;
 	return new;
 }
+
+void load_file(const char * path, char * data){
+	FSfile * file = find_file(path);
+	file->data = realloc(file->data, strlen(data));
+	strcpy(file->data,data);
+	file->size = strlen(data);
+	printf("\nfile is and data is :%sand %s",path,file->data);
+}
+
 
 //function to insert file into FStree
 void insert_file(const char * path){
@@ -395,6 +404,8 @@ void delete_file(const char *path){
 		FStree * file_tree_node = search_node((char *)path);
 		int file_ino;
 		file_ino = file_tree_node->inode_number;
+		char * typ = (char *)malloc(strlen(file_tree_node->type));
+		strcpy(typ,file_tree_node->type);
 		FSfile * del_file = NULL;
 		char * copy_path = (char *)path;
 		char * name = extract_dir(&copy_path);
@@ -439,7 +450,7 @@ void delete_file(const char *path){
         else{
             parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
         }
-	delete_metadata_block(file_ino);
+	delete_metadata_block(typ,file_ino);
 	update_node_wrapper(parent_dir_node);
 	//printf("\nFile %s deleted",name);
 	free(del_file);
@@ -490,7 +501,7 @@ void delete_node(const char * path){
             else{
                 dir_node->parent->children = (FStree **)realloc(dir_node->parent->children,sizeof(FStree *) * dir_node->parent->num_children);
             }
-			delete_metadata_block(dir_node->inode_number);
+			delete_metadata_block(dir_node->type,dir_node->inode_number);
 			update_node_wrapper(dir_node->parent);
 			free(dir_node);
             return;

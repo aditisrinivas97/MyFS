@@ -5,7 +5,10 @@ uint64_t datamap_size = 32768;
 uint8_t * datamap = NULL;
 uint64_t metamap_size = 32768;
 uint8_t * metamap = NULL;
-int flag=0;
+
+
+unsigned long int w_freeblock;
+int w_flag=0;
 // Reset file descriptors - signifies that data file are closed
 void resetdatafd(){
     close(data_fd);
@@ -18,6 +21,7 @@ void resetmetafd(){
     meta_fd = -1;
     return;
 }
+
 
 // Writes the bitmap to the given disk file specified by fd
 void writebitmap(int fd, uint8_t * bitmap, uint64_t bitmap_size){
@@ -81,10 +85,12 @@ int createdisk(){
     return flag;
 }
 
+
 // Returns the next free block in the given disk file
 unsigned long int find_free_block(uint8_t * bitmap, uint64_t bitmap_size){
     unsigned long int freeblock = get_first_unset_bit(bitmap, bitmap_size);
     set_bit(&bitmap, freeblock);
+    printf("\nhello");
     return freeblock;
 }
 
@@ -175,14 +181,23 @@ void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * nod
     write(fd, "CPTR=", 5);
     printf("UPDATE CHILDREN\n");
     while(childnodes < node->num_children){
-            printf("CHILD %d %lu %lu : %s\n", childnodes, node->children[childnodes]->inode_number, sizeof(((node->children[childnodes])->inode_number)), node->children[childnodes]->path);
-            write(fd, "<", 1);
-            write(fd, &((node->children[childnodes])->inode_number), sizeof((node->children[childnodes])->inode_number));
-            write(fd, ">", 1);
-            childnodes++;
-     }
+	 printf("CHILD %d %lu %lu : %s\n", childnodes, node->children[childnodes]->inode_number, sizeof(((node->children[childnodes])->inode_number)), node->children[childnodes]->path);
+	 write(fd, "<", 1);
+	 write(fd, &((node->children[childnodes])->inode_number), sizeof((node->children[childnodes])->inode_number));
+	 write(fd, ">", 1);
+	 childnodes++;
+	 }
     write(fd, "\0\n", 2);
-    
+    if(strcmp(node->type,"file")==0){
+    	    write(fd, "DATA=", 5);
+            printf("file data\n");
+            if(w_flag==1){
+            	printf("\nfreeblock:%ld",w_freeblock);
+                write(fd,&(w_freeblock),sizeof(w_freeblock));
+		w_flag=0;
+            }
+    	    write(fd,"\0\n",2);
+   }
     printf("CLOSE MARKER AT : %ld\n", lseek(fd, 0, SEEK_CUR));
     write(fd, CLOSE_MARKER, 2);
     node->inode_number = freeblock;
@@ -217,13 +232,57 @@ int check_validity_block(unsigned long int blocknumber){
 }
 
 // Deletes a metadata block
-void delete_metadata_block(unsigned long int blocknumber){
+void delete_metadata_block(char * type,unsigned long int blocknumber){
     printf("DELETING BLOCK NUMBER : %lu\n", blocknumber);
     meta_fd = open("fsmeta", O_RDWR , 0644);
     clear_bit(&metamap, blocknumber);
     writebitmap(meta_fd, metamap, metamap_size);
     resetmetafd();
+    if(strcmp(type,"file")==0){
+	printf("im file");
+        unsigned long int d_block = find_data_block(blocknumber);
+	printf("\ndatas block num is:%lu",d_block);
+        data_fd = open("fsdata", O_RDWR , 0644);
+    	clear_bit(&datamap, d_block);
+	writebitmap(data_fd, datamap, datamap_size);
+	resetdatafd();
+    }
 }
+
+unsigned long int find_data_block(unsigned long int blocknumber){
+    char buffer[1] = {0};
+    unsigned long int offset = blocknumber * BLOCK_SIZE;
+    meta_fd = open("fsmeta", O_RDWR , 0644);
+    printf("BLOCK is: %lu\n", blocknumber);
+    lseek(meta_fd, offset, SEEK_SET);
+    printf("\noffset is:%lu",offset);
+    int readbytes = read(meta_fd, &buffer, 1);
+    printf("READING\n");
+    unsigned long int d_block;
+    while(readbytes){
+    	if(buffer[0]=='D'){
+		readbytes = read(meta_fd, &buffer, 1);
+		if(buffer[0]=='A'){
+			readbytes = read(meta_fd, &buffer, 1);
+			if(buffer[0]=='T'){
+		    		readbytes = read(meta_fd, &buffer, 1);
+				readbytes = read(meta_fd, &buffer, 1);
+				readbytes = read(meta_fd, &buffer, 1);
+				if(buffer[0]=='\0'){
+					return 0;
+				}
+				lseek(meta_fd,-1,SEEK_CUR);
+				read(meta_fd, &(d_block), sizeof(d_block));
+				printf("\nthe block is:%lu",d_block);
+		     		break;
+			}
+		}
+        }
+        readbytes = read(meta_fd, &buffer, 1);
+    }
+    return d_block;
+}		
+
 
 // Wrapper function for deseralize metadata
 void deserialize_metadata_wrapper(){
@@ -232,7 +291,6 @@ void deserialize_metadata_wrapper(){
     loadbitmap(meta_fd, &metamap, &metamap_size);
     //print_bitmap(metamap, metamap_size);
     deserialize_metadata(1);
-    resetmetafd();
 }
 
 // Load the metadata into memory
@@ -398,10 +456,13 @@ void deserialize_metadata(unsigned long int blknumber){
                     case 'P':
                         printf("\n!!path is:%s\n",path);
                          if(strcmp(type,"file")==0){
+			   printf("inode:%ld and valid:%d",inode,check_validity_block(inode));
 			   if(check_validity_block(inode)){
-                            //printf("Check valid:%d and %s",inode,path);
-			    //printf("inode:%d and valid:%d",inode,check_validity_block(inode));
+                            printf("Check valid:%ld and %s",inode,path);
+			    printf("inode:%ld and valid:%d",inode,check_validity_block(inode));
                             load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
+		 	    //char * temp = deserialize_file_data(inode);
+			    //load_file(path,temp);
 			    printf("valid path:%s",path);
                             printf("\n");
 		            pathlen = 1;
@@ -557,6 +618,62 @@ void deserialize_metadata(unsigned long int blknumber){
     return;
 }
 
+//writing data into disk block
+void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int inode,char * data,FStree * node){
+	printf("WRITING DATA TO DISK\n");
+	unsigned long int offset;
+	int d_block = find_data_block(node->inode_number);
+	if(d_block==0){
+		w_freeblock = find_free_block(bitmap, bitmap_size);
+        	printf("\nthe free block is:%lu",w_freeblock);
+		offset = w_freeblock * BLOCK_SIZE;
+		//unsigned long int init_next_block = 0;
+		printf("\nthis file :%ld and INODE   : %ld\n",w_freeblock,inode);
+		lseek(fd, offset, SEEK_SET);
+		write(fd, OPEN_MARKER, 2);
+		printf("\nInode no is:%lu",inode);
+		write(fd, "INOD=", 5);
+		write(fd, &(inode), sizeof(inode));
+		write(fd, "\0\n", 2);
+		printf("\ndata is :%s",data);
+		write(fd, "DATA=", 5);
+		write(fd, data, (int)strlen(data));
+		write(fd, "\0\n", 2);
+		write(fd, CLOSE_MARKER, 2);
+		w_flag=1;
+		update_node_wrapper(node);
+		w_flag=0;
+	}
+	else{
+		printf("\nfor append");
+		lseek(fd,(d_block*BLOCK_SIZE+13+sizeof(unsigned long int)),SEEK_SET);
+		printf("\noffset is:%lu",(d_block*BLOCK_SIZE+8+13+sizeof(unsigned long int)));
+		char buffer[1] = {0};
+    		read(data_fd, &buffer, 1);
+    		printf("READING\n");
+		//FSfile * fnode = find_file(node->path);
+		//lseek(data_fd,strlen(fnode->data),SEEK_CUR);
+		printf("\ndata is :%s",data);
+		write(fd, data, (int)strlen(data));
+		write(fd, "\0\n", 2);
+		write(fd, CLOSE_MARKER, 2);
+	}
+	return;
+}
+// Write metadata to disk file
+void serialize_filedata(unsigned long int inode,char * data,FStree * node){
+    write_data(data_fd, datamap, datamap_size, inode,data,node);
+    return;
+}
+
+// Wrapper function for serialize_filedata
+void serialize_filedata_wrapper(unsigned long int inode,char * data,FStree * node){
+    data_fd = open("fsdata", O_RDWR , 0644);
+    serialize_filedata(inode,data,node);
+    writebitmap(data_fd, datamap, datamap_size);
+    resetdatafd();
+}
+
 // Open the data disk file to access data of file specified by <filename>
 int openblock(){
     data_fd = open("fsdata", O_RDWR , 0644);
@@ -570,6 +687,30 @@ int openblock(){
     return 0;
 }
 
+char * deserialize_file_data(unsigned long int inode){
+	char * data=(char *)calloc(sizeof(char), 1);
+	char buffer[1] = {0};
+    	int datalen=1;
+	unsigned long int d_block = find_data_block(inode);
+	if(d_block==0){
+		return '\0';
+	}
+	data_fd = open("fsdata", O_RDWR , 0644);
+	lseek(data_fd,(d_block*BLOCK_SIZE+13+sizeof(unsigned long int)),SEEK_SET);
+	printf("\noffset is:%lu",(d_block*BLOCK_SIZE+8+13+sizeof(unsigned long int)));
+	read(data_fd, &buffer, 1);	
+	while(buffer[0] != '\0'){
+	       //printf("\n in rerad :%c",buffer[0]);
+               datalen++;
+               data = (char *)realloc(data, sizeof(char) * datalen);
+               data[datalen - 1] = '\0';
+               read(data_fd, &data[datalen - 2], 1);
+               buffer[0] = data[datalen - 2];
+        }
+	printf("DATA FOUND : %s\n", data);
+	return data;
+
+}
 // Close the data and metadata disk file
 int closeblock(){
     //close(data_fd);

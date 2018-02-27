@@ -6,6 +6,7 @@ int do_getattr(const char *path, struct stat *st){
 	
 	char * copy_path = (char *)path;
 	FStree * dir_node = NULL;
+	FSfile * file_node;
 	if(strlen(copy_path) > 1){
 		dir_node = search_node(copy_path);
 	}
@@ -22,8 +23,17 @@ int do_getattr(const char *path, struct stat *st){
 		}
 		 else{
 		 	st->st_nlink = 1;
-			//file_node=find_file(path);
-		 	st->st_size = 0;
+			char * temp = deserialize_file_data(dir_node->inode_number);
+			//printf("\n in temp:%s",temp);
+			if(temp!='\0'){
+				load_file(path,temp);
+				file_node=find_file(path);
+				//printf("\n in getattr it is:%s and size:%d",file_node->data,file_node->size);
+			 	st->st_size = file_node->size;
+			}
+			else{
+				st->st_size = 0;
+			}
 		 }
 	 }
 		
@@ -100,6 +110,13 @@ int do_mknod(const char * path, mode_t x, dev_t y){
 	
 int do_open(const char *path, struct fuse_file_info *fi) {
 	printf("\n[open called]\n");
+	FStree * my_file_tree_node = search_node((char *)path);
+	FSfile * my_file = find_file(path);
+	char * temp = deserialize_file_data(my_file_tree_node->inode_number);
+	if(temp!='\0'){
+		load_file(path,temp);
+		printf("in read initial: %s",my_file->data);
+	}
 	return 0;
 }
 	
@@ -201,9 +218,13 @@ int do_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_f
 	size_t len;
 	FStree * my_file_tree_node;
 	FSfile * my_file;
+	my_file_tree_node = search_node((char *)path);
 	my_file = find_file(path);
-	if(my_file != NULL){
-		my_file_tree_node = search_node((char *)path);	
+	char * temp = deserialize_file_data(my_file_tree_node->inode_number);
+	if(temp!='\0')
+		load_file(path,temp);
+	//printf("in read initial len:%d and %s",(int)len,my_file->data);
+	if(my_file_tree_node != NULL){	
 		my_file_tree_node->a_time = time(NULL);
 		len = strlen(my_file->data);
 		printf("in read initial len:%d and %s",(int)len,my_file->data);
@@ -211,10 +232,10 @@ int do_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_f
 			return 0;
 		}
 		memcpy(buf, my_file->data, size);
-		printf("\n read char are :%s and len is :%d\n",buf,(int)strlen(buf));
+		printf("\n read char are :%s and len is :%d and size is:%d\n",buf,(int)strlen(buf),(int)size);
 		return size;
 	}
-		return -ENOENT;
+	return -ENOENT;
 }
 	
 int do_chmod(const char *path, mode_t new){	
@@ -228,7 +249,6 @@ int do_chmod(const char *path, mode_t new){
 	}
 		return -ENOENT;
 }
-	
 int do_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
 	if(do_access(path,W_OK)!=0){
 		return -EACCES;
@@ -247,8 +267,9 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		memcpy((my_file->data) + offset, buf, size);
 		my_file_tree_node->size = size + offset;
 		printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
-		printf("content is : %s and len is:%d\n", my_file->data,(int)size);
-		memset((char *)buf, 0, strlen(buf));
+		//printf("content is : %s and len is:%d\n", my_file->data,size);
+		load_file(path,my_file->data);
+		serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
 		return size;
 	}
 		return -ENOENT;

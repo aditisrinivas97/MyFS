@@ -48,6 +48,11 @@ int update_node_wrapper(FStree * node);
 int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
 void deserialize_metadata(unsigned long int blknumber);
 void deserialize_metadata_wrapper();
-void delete_metadata_block(unsigned long int blocknumber);
+void delete_metadata_block(char * type,unsigned long int blocknumber);
 int check_validity_block(unsigned long int blocknumber);
+void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int inode,char * data,FStree * node);
+void serialize_filedata(unsigned long int inode,char * data,FStree * node);
+void serialize_filedata_wrapper(unsigned long int inode,char * data,FStree * node);
+unsigned long int find_data_block(unsigned long int blocknumber);
+char * deserialize_file_data(unsigned long int inode);
 #endif
