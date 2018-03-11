@@ -91,7 +91,6 @@ int do_rmdir(const char * path){
 	printf("[rmdir] called!\n");
 	int ret = delete_node(path);
 	if(ret < 0){
-		printf("CHECK ERRNNOOO : %d\n", errno);
 		return -ENOTEMPTY;
 	}
 	return 0;
