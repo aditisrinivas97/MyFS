@@ -6,9 +6,12 @@ uint8_t * datamap = NULL;
 uint64_t metamap_size = 32768;
 uint8_t * metamap = NULL;
 
-
+unsigned long int *array;
+int set=0;
+int t_set = 0;
 unsigned long int w_freeblock;
 int w_flag=0;
+
 // Reset file descriptors - signifies that data file are closed
 void resetdatafd(){
     close(data_fd);
@@ -191,10 +194,14 @@ void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * nod
     if(strcmp(node->type,"file")==0){
     	    write(fd, "DATA=", 5);
             printf("file data\n");
-            if(w_flag==1){
+            if(w_flag>0){
             	printf("\nfreeblock:%ld",w_freeblock);
+		//write(fd, "<", 1);
+		printf("\nw_flag is :%d",w_flag);
+		lseek(fd,sizeof(unsigned long int)*(w_flag-1),SEEK_CUR);
                 write(fd,&(w_freeblock),sizeof(w_freeblock));
-		w_flag=0;
+		//write(fd, ">", 1);
+		//w_flag=0;
             }
     	    write(fd,"\0\n",2);
    }
@@ -246,6 +253,23 @@ void delete_metadata_block(char * type,unsigned long int blocknumber){
     	clear_bit(&datamap, d_block);
 	writebitmap(data_fd, datamap, datamap_size);
 	resetdatafd();
+	if(t_set!=0)
+	{
+		int i=0;
+		while(t_set!=0)
+		{
+			d_block = array[i];
+			i=i+1;
+			t_set = t_set -1;	
+			printf("\nset is:%d and i is:%d and d_blockis :%lu",t_set,i,d_block);
+			data_fd = open("fsdata", O_RDWR , 0644);
+    			clear_bit(&datamap, d_block);
+			writebitmap(data_fd, datamap, datamap_size);
+			resetdatafd();
+		}
+		t_set = 0;
+	}
+		
     }
 }
 
@@ -273,13 +297,29 @@ unsigned long int find_data_block(unsigned long int blocknumber){
 				}
 				lseek(meta_fd,-1,SEEK_CUR);
 				read(meta_fd, &(d_block), sizeof(d_block));
-				printf("\nthe block is:%lu",d_block);
+				//lseek(meta_fd,sizeof(d_block),SEEK_CUR);
+				readbytes = read(meta_fd, &buffer, 1);
+				t_set=0;
+				set = 0;
+				//array = (char *)realloc(sizeof(char)*1);
+				while(buffer[0]!='\0'){
+					set = set+1;
+					lseek(meta_fd,-1,SEEK_CUR);
+					array = (unsigned long int *)realloc(array, sizeof(array) * set);
+					read(meta_fd, &(array[set-1]), sizeof(d_block));
+					//lseek(meta_fd,sizeof(d_block),SEEK_CUR);
+					readbytes = read(meta_fd, &buffer, 1);
+					printf("\nthe block is:%lu and array[%d]:%lu",d_block,set,array[set-1]);
+					t_set = set;
+					
+				}
 		     		break;
 			}
 		}
         }
         readbytes = read(meta_fd, &buffer, 1);
     }
+    set = 0;
     return d_block;
 }		
 
@@ -622,7 +662,10 @@ void deserialize_metadata(unsigned long int blknumber){
 void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int inode,char * data,FStree * node){
 	printf("WRITING DATA TO DISK\n");
 	unsigned long int offset;
+	int x= sizeof(unsigned long int);
 	int d_block = find_data_block(node->inode_number);
+	if(w_flag>0)
+		d_block = 0 ;
 	if(d_block==0){
 		w_freeblock = find_free_block(bitmap, bitmap_size);
         	printf("\nthe free block is:%lu",w_freeblock);
@@ -635,15 +678,50 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 		write(fd, "INOD=", 5);
 		write(fd, &(inode), sizeof(inode));
 		write(fd, "\0\n", 2);
-		printf("\ndata is :%s",data);
+		printf("\ndata is :%s and its len:%lu actual limit:%d",data,strlen(data),512-x-13);
 		write(fd, "DATA=", 5);
-		write(fd, data, (int)strlen(data));
-		write(fd, "\0\n", 2);
-		write(fd, CLOSE_MARKER, 2);
-		w_flag=1;
-		update_node_wrapper(node);
-		w_flag=0;
+		if(strlen(data)<(512-x-13))
+		{
+			write(fd, data, (int)strlen(data));
+			write(fd, "\0\n", 2);
+			write(fd, CLOSE_MARKER, 2);
+			w_flag++;
+			update_node_wrapper(node);
+			w_flag=0;
+		}
+		else
+		{	printf("\nin write actual:%lu",strlen(data));
+			printf("\nto be written :%d",512-x-13);
+			printf("\nremain:%lu",strlen(data)-(512-x-13));
+			char *substr= calloc(sizeof(char),512-x-13+1);
+			char *remain = calloc(sizeof(char),strlen(data)-(512-x-13)+1);
+			//memset(remain, 0, strlen(data)-(512-x-13)+1);
+			//memset(substr, 0, strlen(data)-(512-x-13)+1);
+			strncpy(substr,data,512-x-13);
+			substr[strlen(substr)]='\0';
+			printf("\nsubstr string is:%s",substr);
+			if((strlen(data)-(512-x-13))!=0)
+			{
+				strncpy(remain,data+(512-x-13),strlen(data)-(512-x-13));
+				remain[strlen(remain)]='\0';
+				printf("\nremain string is:%s",remain);
+			}
+			write(fd, substr, (int)strlen(substr));
+			write(fd, "\0\n", 2);
+			write(fd, CLOSE_MARKER, 2);
+			w_flag=w_flag+1;
+			update_node_wrapper(node);
+			if((strlen(data)-(512-x-13))!=0)
+			{
+				write_data(data_fd, datamap, datamap_size, inode,remain,node);
+			}
+			else
+			{
+				w_flag = 0;
+			}
+		}
 	}
+	/*check append*/
 	else{
 		printf("\nfor append");
 		lseek(fd,(d_block*BLOCK_SIZE+13+sizeof(unsigned long int)),SEEK_SET);
@@ -653,10 +731,48 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
     		printf("READING\n");
 		//FSfile * fnode = find_file(node->path);
 		//lseek(data_fd,strlen(fnode->data),SEEK_CUR);
-		printf("\ndata is :%s",data);
-		write(fd, data, (int)strlen(data));
-		write(fd, "\0\n", 2);
-		write(fd, CLOSE_MARKER, 2);
+		w_freeblock = d_block;
+		if(strlen(data)<(512-x-13))
+		{
+			write(fd, data, (int)strlen(data));
+			write(fd, "\0\n", 2);
+			write(fd, CLOSE_MARKER, 2);
+			printf("\nvalue of w-flag=%d",w_flag);
+			w_flag++;
+			update_node_wrapper(node);
+			w_flag=0;
+		}
+		else
+		{	printf("\nin write actual:%lu",strlen(data));
+			printf("\nto be written :%d",512-x-13);
+			printf("\nremain:%lu",strlen(data)-(512-x-13));
+			char *substr= calloc(sizeof(char),512-x-13+1);
+			char *remain = calloc(sizeof(char),strlen(data)-(512-x-13+1));
+			//memset(remain, 0, strlen(data)-(512-x-13)+1);
+			//memset(substr, 0, strlen(data)-(512-x-13)+1);
+			strncpy(substr,data,512-x-13);
+			substr[strlen(substr)]='\0';
+			printf("\nsubstr string is:%s",substr);
+			if((strlen(data)-(512-x-13))!=0)
+			{
+				strncpy(remain,data+(512-x-13),strlen(data)-(512-x-13));
+				remain[strlen(remain)]='\0';
+				printf("\nremain string is:%s",remain);
+			}
+			write(fd, substr, (int)strlen(substr));
+			write(fd, "\0\n", 2);
+			write(fd, CLOSE_MARKER, 2);
+			w_flag=w_flag+1;
+			update_node_wrapper(node);
+			if((strlen(data)-(512-x-13))!=0)
+			{
+				write_data(data_fd, datamap, datamap_size, inode,remain,node);
+			}
+			else
+			{
+				w_flag = 0;
+			}
+		}
 	}
 	return;
 }
@@ -688,14 +804,18 @@ int openblock(){
 }
 
 char * deserialize_file_data(unsigned long int inode){
+	printf("\nthis deserialise\n");
 	char * data=(char *)calloc(sizeof(char), 1);
+	char * data1=(char *)calloc(sizeof(char), 1);
 	char buffer[1] = {0};
     	int datalen=1;
+	printf("\ninode is:%lu",inode);
 	unsigned long int d_block = find_data_block(inode);
 	if(d_block==0){
 		return '\0';
 	}
 	data_fd = open("fsdata", O_RDWR , 0644);
+	printf("\nthe data block is:%lu",d_block);
 	lseek(data_fd,(d_block*BLOCK_SIZE+13+sizeof(unsigned long int)),SEEK_SET);
 	printf("\noffset is:%lu",(d_block*BLOCK_SIZE+8+13+sizeof(unsigned long int)));
 	read(data_fd, &buffer, 1);	
@@ -707,6 +827,40 @@ char * deserialize_file_data(unsigned long int inode){
                read(data_fd, &data[datalen - 2], 1);
                buffer[0] = data[datalen - 2];
         }
+	printf("\n t_set is :%d and data is :%s ",t_set,data);
+	if(t_set!=0)
+	{
+		int i=0;
+		while(t_set!=0)
+		{
+			datalen = 1;
+			//data1 = (char *)calloc(sizeof(char), 1);
+			d_block = array[i];
+			i=i+1;
+			t_set = t_set -1;	
+			printf("\nset is:%d and i is:%d and d_blockis :%lu",t_set,i,d_block);
+			lseek(data_fd,(d_block*BLOCK_SIZE+13+sizeof(unsigned long int)),SEEK_SET);
+			printf("\noffset is:%lu",(d_block*BLOCK_SIZE+8+13+sizeof(unsigned long int)));
+			read(data_fd, &buffer, 1);	
+			while(buffer[0] != '\0'){
+			       printf("\n in rerad :%c",buffer[0]);
+			       datalen++;
+			       data1 = (char *)realloc(data1, sizeof(char) * datalen);
+			       data1[datalen - 1] = '\0';
+			       read(data_fd, &data1[datalen - 2], 1);
+			       buffer[0] = data1[datalen - 2];
+		               //printf("Data is : %s and strlen(data1):%d\n", data1,strlen(data1));
+			}
+			printf("Data is : %s and strlen(data1):%lu\n", data1,strlen(data1));
+			data = (char *)realloc(data,strlen(data)+strlen(data1)+1);
+			data = strcat(data,data1);
+			printf("\nthe data concatenated is :%s",data);
+		}
+		t_set = 0;
+		//array=NULL;
+		free(data1);
+	}
+	data[strlen(data)]='\0';
 	printf("DATA FOUND : %s\n", data);
 	return data;
 

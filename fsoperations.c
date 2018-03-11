@@ -126,7 +126,7 @@ int do_unlink(const char * path){
 	return 0;
 }
 int do_access(const char * path, int mask){
-	printf("\n[access called]and path:%s\n",path);
+	printf("\n[access called]and path:%s and mask is:%d\n",path,mask);
 	char * copy_path = (char *)path;
 	uid_t u=getuid();
 	gid_t g=getgid();
@@ -139,6 +139,8 @@ int do_access(const char * path, int mask){
 		my_file_tree_node = search_node((char *)path);
 	}
 	printf("\n[access called]and mask is :%d",mask);
+	if(mask==0)
+		mask=1;
 	mode_t p = my_file_tree_node->permissions;
 	switch(mask){
 		case 1:{
@@ -268,6 +270,7 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		my_file_tree_node->size = size + offset;
 		printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
 		//printf("content is : %s and len is:%d\n", my_file->data,size);
+		my_file->data[strlen(my_file->data)]='\0';
 		load_file(path,my_file->data);
 		serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
 		return size;
