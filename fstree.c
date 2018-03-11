@@ -537,9 +537,19 @@ FSfile * find_file(const char * path){
 }
 void move_node(const char * from,const char * to){
 	//FStree * copy = (FStree **)malloc(sizeof(FStree *));
+	printf("\n im inside mv function");
 	int i,j,flag=0;
 	char * copy_frompath = (char *)from;
+	char * copy_topath = (char *)to;
 	FStree * dir_node = search_node(copy_frompath);
+	FStree * todir =  search_node(copy_topath);
+	if(dir_node!=NULL && todir!=NULL)
+	{
+		if(strcmp(todir->type,"file")==0)
+			delete_file(copy_topath);
+		else
+			delete_node(copy_topath);
+	}
 	char temp_path[20];
 	if(dir_node!=NULL){
 		
@@ -553,9 +563,8 @@ void move_node(const char * from,const char * to){
 			char * rpath = reverse(reverse(copy_frompath,0),1);
 			parent_dir_node = search_node(rpath);
 		}
-		char * copy_topath = (char *)to;
 		char * toname = extract_dir(&copy_topath);
-		//printf("\ntoname :%s",toname);
+		printf("\ntoname :%s",toname);
 		copy_topath++;
 		FSfile * file_node;
 		FStree * to_parent_dir_node;
@@ -565,33 +574,37 @@ void move_node(const char * from,const char * to){
 			to_parent_dir_node = root;
 		}
 		else{
-			//printf("\nparent node:\n");
+			printf("\nparent node:\n");
 			char * r_topath = reverse(reverse(copy_topath,0),1);
-			//printf("\nparent node 2 :%s\n",r_topath);
+			printf("\nparent node 2 :%s\n",r_topath);
 			to_parent_dir_node = search_node(r_topath);
-			//printf("\nparent node:%s\n",to_parent_dir_node->name);
+			printf("\nparent node:%s\n",to_parent_dir_node->name);
 		}
 		to_parent_dir_node->num_children++;
 		to_parent_dir_node->c_time=time(NULL);
 		to_parent_dir_node->children = (FStree **)realloc(to_parent_dir_node->children,sizeof(FStree *) * to_parent_dir_node->num_children);
 		dir_node->a_time = time(NULL);
 		to_parent_dir_node->children[to_parent_dir_node->num_children - 1]=dir_node;		
-		//printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->path);
-		//printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+		printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->children[to_parent_dir_node->num_children - 1]->path);
+		printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+		for(i=0;i<parent_dir_node->num_children;i++)
+		{
+			printf("\ncheck i am:%s \n",parent_dir_node->children[i]->name);
+		}
 		for(i=0;i<parent_dir_node->num_children;i++)
 		{
 			if(strcmp(parent_dir_node->children[i]->name,name)==0){
-				//printf("\n i am :%s\n",parent_dir_node->children[i]->name);
+				printf("\n i am:%s and i is:%d and %d\n",parent_dir_node->children[i]->name,i,parent_dir_node->num_children);
 				for(j=i;j<parent_dir_node->num_children-1;j++){
 				parent_dir_node->children[j]=parent_dir_node->children[j+1];
-				//printf("\n i am :%s\n",parent_dir_node->children[i]->name);
+				printf("\nshift i am :%s\n",parent_dir_node->children[j]->name);
 				}
 				break;
 			}
 		}
 		parent_dir_node->num_children--;
 		if(parent_dir_node->num_children == 0){
-			//printf("\n in delete:%s\n",parent_dir_node->name);
+			printf("\n in delete:%s\n",parent_dir_node->name);
                		parent_dir_node->children = NULL;
         	}
            	else{
@@ -604,14 +617,16 @@ void move_node(const char * from,const char * to){
 			to_parent_dir_node->num_files++;
 			to_parent_dir_node->fchildren = (FSfile **)realloc(to_parent_dir_node->fchildren,sizeof(FSfile *) * to_parent_dir_node->num_files);
 			to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]=file_node;
-			//printf("\n $$$$$copied$$$ and %s\n",to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]->name);
-			//printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
+			printf("\n $$$$$copied in file$$$ and %s\n",to_parent_dir_node->fchildren[to_parent_dir_node->num_files - 1]->name);
+			printf("\norig parent:%s and name:%s\n",parent_dir_node->name,name);
 			parent_dir_node->num_files--;
+			printf("\nno :%d",parent_dir_node->num_files);
 			if(parent_dir_node->num_files == 0){
-				//printf("\n in delete:%s\n",parent_dir_node->name);
+				printf("\n in delete:%s\n",parent_dir_node->name);
                 		parent_dir_node->fchildren = NULL;
             		}
             		else{
+				printf("\nbefore realloc  and flag =%d",flag);
                 		parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
             		}
 			if(flag==1)

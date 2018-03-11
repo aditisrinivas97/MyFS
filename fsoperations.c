@@ -141,6 +141,7 @@ int do_access(const char * path, int mask){
 	printf("\n[access called]and mask is :%d",mask);
 	if(mask==0)
 		mask=1;
+	printf("\n[access called]and mask is :%d",mask);
 	mode_t p = my_file_tree_node->permissions;
 	switch(mask){
 		case 1:{
