@@ -458,10 +458,10 @@ void delete_file(const char *path){
 }
 
 // Function to delete a node in the FS tree
-void delete_node(const char * path){
+int delete_node(const char * path){
     //printf("DELETING PATH : %s\n", path);
     if(root == NULL){
-        return;
+        return 0;
     }
     else{
         char * copy_path = (char *)path;
@@ -469,11 +469,15 @@ void delete_node(const char * path){
         int i, j;
         if(strlen(copy_path) == 1){
             printf("Cannot delete root directory!\n");  // do not allow deletion of root directory
-            return;
+            return -1;
         }
         else{
             //printf("Search for %s\n", copy_path);
             dir_node = search_node(copy_path);  // get the directory's address
+			if(dir_node->children != NULL){
+				printf("\n\nRETURNING NON EMPTY!\n");
+				return -1;
+			}
 	    	dir_node->parent->c_time=time(&t);
 	    	dir_node->parent->m_time=time(&t);
             if(dir_node->children != NULL){
@@ -504,10 +508,10 @@ void delete_node(const char * path){
 			delete_metadata_block(dir_node->type,dir_node->inode_number);
 			update_node_wrapper(dir_node->parent);
 			free(dir_node);
-            return;
+            return 0;
         }
     }
-    return;
+    return 0;
 }
 
 //function to search for a file in FStree

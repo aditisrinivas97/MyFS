@@ -89,7 +89,11 @@ int do_mkdir(const char * path, mode_t x){
 	
 int do_rmdir(const char * path){
 	printf("[rmdir] called!\n");
-	delete_node(path);
+	int ret = delete_node(path);
+	if(ret < 0){
+		printf("CHECK ERRNNOOO : %d\n", errno);
+		return -ENOTEMPTY;
+	}
 	return 0;
 }
 	
