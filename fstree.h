@@ -62,6 +62,6 @@ void delete_node(const char * path);
 FSfile * find_file(const char * path);
 void move_node(const char * from,const char * to);
 void path_update(FStree * dir_node,char * topath);
-void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_time, time_t lm_time, time_t la_time, time_t lb_time, unsigned long int inode, off_t size);
+void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_time, time_t lm_time, time_t la_time, time_t lb_time, unsigned long int inode, off_t size, mode_t lpermissions);
 void load_file(const char *path, char * data);
 #endif

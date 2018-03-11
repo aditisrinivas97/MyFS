@@ -247,6 +247,7 @@ int do_chmod(const char *path, mode_t new){
 	if(current != NULL){
 		current->c_time=time(NULL);
 		current->permissions = new;
+		update_node_wrapper(current);
 		return 0;
 	}
 		return -ENOENT;
@@ -271,6 +272,7 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		printf("content of buf is : %s and len is:%d\n", buf,(int)strlen(buf));
 		//printf("content is : %s and len is:%d\n", my_file->data,size);
 		my_file->data[strlen(my_file->data)]='\0';
+		printf("\n\nENTERING LOAD_FILE!\n\n");
 		load_file(path,my_file->data);
 		serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
 		return size;

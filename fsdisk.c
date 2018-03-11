@@ -500,7 +500,7 @@ void deserialize_metadata(unsigned long int blknumber){
 			   if(check_validity_block(inode)){
                             printf("Check valid:%ld and %s",inode,path);
 			    printf("inode:%ld and valid:%d",inode,check_validity_block(inode));
-                            load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
+                            load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size, permissions);
 		 	    //char * temp = deserialize_file_data(inode);
 			    //load_file(path,temp);
 			    printf("valid path:%s",path);
@@ -574,7 +574,7 @@ void deserialize_metadata(unsigned long int blknumber){
 		                }
 		                if(check_validity_block(inode)){
 				    //printf("Check valid:%d",inode);
-		                    load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size);
+		                    load_node(path, type, group_id, user_id, c_time, m_time, a_time, b_time, inode, size, permissions);
 				    printf("valid path:%s",path);
 		                    printf("\n");
 		                    pathlen = 1;
