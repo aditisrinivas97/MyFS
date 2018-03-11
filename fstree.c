@@ -134,7 +134,7 @@ FStree * init_node(const char * path, char * name, FStree * parent,int type){
     }     
     if(type==0){
 	    new->type = "file"; 
-    	new->permissions = S_IFREG | 0666; 
+    	new->permissions = S_IFREG | 0777; 
     }    
     new->group_id = getgid();
     new->user_id = getuid();
@@ -647,6 +647,9 @@ void move_node(const char * from,const char * to){
 		{
 			path_update(dir_node,temp_path);
 		}
+		update_node_wrapper(dir_node);
+		update_node_wrapper(parent_dir_node);
+		update_node_wrapper(to_parent_dir_node);
 	}		
 }
 
@@ -679,6 +682,8 @@ void path_update(FStree * dir_node,char * topath)
 			}
 			temp->children[i]->parent=dir_node;
 			//if(strcmp(temp->children[i]->type,"directory")==0)
+			update_node_wrapper(dir_node);
+			update_node_wrapper(temp->children[i]->parent);
 			path_update(temp->children[i],temp->path);
 		}
 	//}

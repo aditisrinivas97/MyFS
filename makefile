@@ -9,10 +9,10 @@ run: compile
 	./fs -f /home/$(username)/Desktop/mountpoint
 
 debugrun: dcompile
-	./fs -d -f -s /home/$(username)/Desktop/mountpoint
+	valgrind --track-origins=yes ./fs -d -f -s /home/$(username)/Desktop/mountpoint
 
 compile: checkdir
-	gcc -Wall $(files) $(opflag) $(flags)
+	gcc -Wall -g $(files) $(opflag) $(flags)
 
 dcompile: checkdir	
 	gcc -Wall -g $(files) $(opflag) $(flags)

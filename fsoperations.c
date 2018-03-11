@@ -21,18 +21,18 @@ int do_getattr(const char *path, struct stat *st){
 		if (strcmp(dir_node->type, "directory") == 0){
 			st->st_nlink = 2;
 		}
-		 else{
+		else{
 		 	st->st_nlink = 1;
 			char * temp = deserialize_file_data(dir_node->inode_number);
-			//printf("\n in temp:%s",temp);
 			if(temp!='\0'){
 				load_file(path,temp);
 				file_node=find_file(path);
-				//printf("\n in getattr it is:%s and size:%d",file_node->data,file_node->size);
 			 	st->st_size = file_node->size;
+				st->st_blocks = (((st->st_size) / 512) + 1);
 			}
 			else{
 				st->st_size = 0;
+				st->st_blocks = 0;
 			}
 		 }
 	 }
@@ -101,7 +101,7 @@ int do_mknod(const char * path, mode_t x, dev_t y){
 	if(node != NULL){
 		serialize_metadata_wrapper(node);
 		if(node->parent != NULL){
-			printf("\n in mknod i a :%s",node->name);
+			printf("\n IN MKNOD : %s",node->name);
 			update_node_wrapper(node->parent);
 		}
 	}
@@ -115,7 +115,7 @@ int do_open(const char *path, struct fuse_file_info *fi) {
 	char * temp = deserialize_file_data(my_file_tree_node->inode_number);
 	if(temp!='\0'){
 		load_file(path,temp);
-		printf("in read initial: %s",my_file->data);
+		printf("IN READ INITIAL: %s",my_file->data);
 	}
 	return 0;
 }
@@ -232,9 +232,10 @@ int do_read(const char *path, char *buf, size_t size, off_t offset,struct fuse_f
 		len = strlen(my_file->data);
 		printf("in read initial len:%d and %s",(int)len,my_file->data);
 		if(len == 0){
+			printf("RETURNING BECAUSE ZERO LENGTH!\n");
 			return 0;
 		}
-		memcpy(buf, my_file->data, size);
+		memcpy(buf, my_file->data + offset, size);
 		printf("\n read char are :%s and len is :%d and size is:%d\n",buf,(int)strlen(buf),(int)size);
 		return size;
 	}
