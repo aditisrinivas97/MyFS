@@ -1,5 +1,4 @@
 username = $(shell whoami)
-INCDIR = include
 SRCDIR = src
 files = $(SRCDIR)/fsmain.c $(SRCDIR)/fsoperations.c $(SRCDIR)/fstree.c $(SRCDIR)/bitmap.c $(SRCDIR)/fsdisk.c
 opflag = -o fs
