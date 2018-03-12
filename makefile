@@ -1,5 +1,7 @@
 username = $(shell whoami)
-files = fsmain.c fsoperations.c fstree.c bitmap.c fsdisk.c
+INCDIR = include
+SRCDIR = src
+files = $(SRCDIR)/fsmain.c $(SRCDIR)/fsoperations.c $(SRCDIR)/fstree.c $(SRCDIR)/bitmap.c $(SRCDIR)/fsdisk.c
 opflag = -o fs
 flags = `pkg-config fuse --cflags --libs` -DFUSE_USE_VERSION=25 -lm -g
 
