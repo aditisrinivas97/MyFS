@@ -36,7 +36,8 @@ int do_getattr(const char *path, struct stat *st){
 			}
 		 }
 	 }
-		
+	
+	st->st_nlink += dir_node->num_children;
 	st->st_mode = dir_node->permissions;
 	st->st_uid = dir_node->user_id; 
 	st->st_gid = dir_node->group_id;
