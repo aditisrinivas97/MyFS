@@ -68,9 +68,10 @@ Clone this repository
 $ git clone https://github.com/aditisrinivas97/MyFS MyFS
 ```
 
-cd into the folder 'MyFS'
+Cd into the folder 'MyFS' and mount the filesystem using the makefile
 ```
 $ cd MyFS
+$ make
 ```
 
 To view the error logs of fuse and check for memory leaks / errors, run the following commands
