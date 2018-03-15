@@ -28,7 +28,6 @@ char * extract_path(char ** copy_path){
     }
     retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
     retval[retlen] = '\0';
-    printf("\nreturned\n");
     return retval;
 }
 
@@ -212,7 +211,6 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
 				else{	root->num_files++;
 					root->children[0] = init_node(path, dir, root,2);
 					root->children[0]->permissions=lpermissions;
-					printf("\n***path :%s and dir:%s",path,tdir);
 					root->fchildren = (FSfile **)malloc(sizeof(FSfile *));
 					root->fchildren[0] = init_file(path,tdir);
 					root->children[0]->type="file";
@@ -235,7 +233,6 @@ void load_node(char * path, char * type, gid_t groupid, uid_t userid, time_t lc_
 				}
 				else{
 					root->num_files++;
-					printf("\nloading file and %s\n",path);
 					root->children[root->num_children - 1] = init_node(path, dir, root,2);
 					root->children[root->num_children - 1]->permissions= lpermissions; 
 					root->fchildren = (FSfile **)realloc(root->fchildren, sizeof(FSfile *) * root->num_files);
@@ -585,9 +582,6 @@ void move_node(const char * from,const char * to){
 		if(strcmp(dir_node->type,"directory")==0){
 			path_update(dir_node,temp_path);
 		}
-		//update_node_wrapper(dir_node);
-		//update_node_wrapper(parent_dir_node);
-		//update_node_wrapper(to_parent_dir_node);
 	}		
 }
 
@@ -610,8 +604,6 @@ void path_update(FStree * dir_node,char * topath){
 			temp->fchildren[j]->path[strlen(temp->path)+strlen(temp->name)+1]='\0';
 		}
 		temp->children[i]->parent=dir_node;
-		//update_node_wrapper(dir_node);
-		//update_node_wrapper(temp->children[i]->parent);
 		path_update(temp->children[i],temp->path);
 	}
 }

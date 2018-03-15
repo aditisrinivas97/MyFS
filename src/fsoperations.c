@@ -29,7 +29,6 @@ int do_getattr(const char *path, struct stat *st){
 				file_node=find_file(path);
 			 	st->st_size = file_node->size;
 				st->st_blocks = (((st->st_size) / 512) + 1);
-				printf("\nblocks are :%ld",st->st_blocks);
 			}
 			else{
 				st->st_size = 0;
@@ -114,7 +113,6 @@ int do_mknod(const char * path, mode_t x, dev_t y){
 int do_open(const char *path, struct fuse_file_info *fi) {
 	printf("OPEN CALLED\n");
 	FStree * my_file_tree_node = search_node((char *)path);
-	//FSfile * my_file = find_file(path);
 	char * temp = deserialize_file_data(my_file_tree_node->inode_number);
 	if(temp != '\0'){
 		load_file(path,temp);
@@ -264,7 +262,6 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		my_file_tree_node->path = (char *)realloc(my_file_tree_node->path, sizeof(char) * strlen(path)+1);
 		strcpy(my_file_tree_node->path,path);
 		my_file_tree_node->path[strlen(my_file_tree_node->path)]='\0';
-		//printf("\n***sear node:%s",my_file_tree_node->path);	
 		my_file_tree_node->m_time = time(NULL);
 		my_file_tree_node->c_time = time(NULL);
 		my_file->data = (char *)realloc(my_file->data, sizeof(char) * (size + offset + 1));
@@ -292,10 +289,7 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
         			}
 			}
 		}
-		//load_file(path,my_file->data);
-		//printf("\n***sear node2:%s",my_file_tree_node->path);	
 		if(flag == 0){
-			//printf("\n***to be written:%s",my_file_tree_node->path);
 			serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
 		}
 		memset((char *)buf, 0, strlen(buf));
@@ -347,11 +341,9 @@ int do_rename(const char* from, const char* to){
 		dst = search_node((char *)to);
 		serialize_metadata_wrapper(dst);
 		if(dst->parent != NULL){
-			//printf("\nserialize\n");
 			update_node_wrapper(dst->parent);
 		}
 		FSfile * my_file = find_file((char*)to);
-		//printf("\nbefore ser dst name:%s****",dst->name);
 		serialize_filedata_wrapper(dst->inode_number,my_file->data,dst);
 	}
 	return 0;

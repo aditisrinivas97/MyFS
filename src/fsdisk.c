@@ -118,7 +118,6 @@ int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
 
 void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
     printf("WRITE_DISKFILE CALLED\n");
-    printf("\n******write file is :%s",node->path);
     int childnodes = 0;
     unsigned long int freeblock = find_free_block(bitmap, bitmap_size);
     unsigned long int offset = freeblock * BLOCK_SIZE;
@@ -329,7 +328,7 @@ void deserialize_metadata(unsigned long int blknumber){
                             read(meta_fd, &path[pathlen - 2], 1);
                             buffer[0] = path[pathlen - 2];
                         }
-                        printf("PATH FOUND : %s\n", path);
+                        //printf("PATH FOUND : %s\n", path);
                         if(search_node(path) != NULL){
                             return; 
                         }
@@ -343,14 +342,14 @@ void deserialize_metadata(unsigned long int blknumber){
                             readbytes = read(meta_fd, &buffer, 1);
                         }
                         read(meta_fd, &permissions, sizeof(permissions));
-                        printf("PERMISSIONS FOUND : (%3o)\n", permissions&0777);
+                        //printf("PERMISSIONS FOUND : (%3o)\n", permissions&0777);
                         break;
                     case 'P':
                         for(i = 0; i < 3; i++){
                             readbytes = read(meta_fd, &buffer, 1);
                         }
                         read(meta_fd, &parent, sizeof(parent));
-                        printf("PARENT FOUND : %lu\n", parent);
+                        //printf("PARENT FOUND : %lu\n", parent);
                         break;
                 }   
                 break;
@@ -362,7 +361,7 @@ void deserialize_metadata(unsigned long int blknumber){
                             readbytes = read(meta_fd, &buffer, 1);
                         }
                         read(meta_fd, &inode, sizeof(inode));
-                        printf("INODE FOUND : %lu\n", inode);
+                        //printf("INODE FOUND : %lu\n", inode);
                         break;
                 }  
                 break; 
@@ -380,7 +379,7 @@ void deserialize_metadata(unsigned long int blknumber){
                             read(meta_fd, &type[typelen - 2], 1);
                             buffer[0] = type[typelen - 2];
                         }
-                        printf("TYPE FOUND : %s\n", type);
+                        //printf("TYPE FOUND : %s\n", type);
                         break;
                 }   
                 break;
@@ -392,21 +391,21 @@ void deserialize_metadata(unsigned long int blknumber){
                             readbytes = read(meta_fd, &buffer, 1);
                         }
                         read(meta_fd, &user_id, sizeof(user_id));
-                        printf("USER ID FOUND : %d\n", user_id);
+                        //printf("USER ID FOUND : %d\n", user_id);
                         break;
                     case 'G':
                         for(i = 0; i < 3; i++){
                             readbytes = read(meta_fd, &buffer, 1);
                         }
                         read(meta_fd, &group_id, sizeof(group_id));
-                        printf("GROUP ID FOUND : %d\n", group_id);
+                        //printf("GROUP ID FOUND : %d\n", group_id);
                         break;
                     case 'B':
                         for(i = 0; i < 3; i++){
                             readbytes = read(meta_fd, &buffer, 1);
                         }
                         read(meta_fd, &nblk, sizeof(nblk));
-                        printf("NEXT BLOCK FOUND : %lu\n", nblk);
+                        //printf("NEXT BLOCK FOUND : %lu\n", nblk);
                         break;
                 }  
                 break;
@@ -419,7 +418,7 @@ void deserialize_metadata(unsigned long int blknumber){
                 }
                 readbytes = read(meta_fd, &buffer, 1);
                 read(meta_fd, &a_time, sizeof(a_time));
-                printf("ACCESS TIME FOUND : %s", ctime(&a_time));
+                //printf("ACCESS TIME FOUND : %s", ctime(&a_time));
                 break;
             case 'M':
                 readbytes = read(meta_fd, &buffer, 1);
@@ -431,7 +430,7 @@ void deserialize_metadata(unsigned long int blknumber){
                 }
                 readbytes = read(meta_fd, &buffer, 1);
                 read(meta_fd, &m_time, sizeof(m_time));
-                printf("MODIFIED TIME FOUND : %s", ctime(&m_time));
+                //printf("MODIFIED TIME FOUND : %s", ctime(&m_time));
                 break;
             case 'C':
                 readbytes = read(meta_fd, &buffer, 1);
@@ -442,7 +441,7 @@ void deserialize_metadata(unsigned long int blknumber){
                         }
                         readbytes = read(meta_fd, &buffer, 1);
                         read(meta_fd, &c_time, sizeof(c_time));
-                        printf("STATUS CHANGE TIME FOUND : %s", ctime(&c_time));
+                        //printf("STATUS CHANGE TIME FOUND : %s", ctime(&c_time));
                         break;
                     case 'P':
                         if(strcmp(type,"file") == 0){
@@ -564,7 +563,7 @@ void deserialize_metadata(unsigned long int blknumber){
                 }
                 readbytes = read(meta_fd, &buffer, 1);
                 read(meta_fd, &b_time, sizeof(b_time));
-                printf("CREATION TIME FOUND : %s", ctime(&b_time));
+                //printf("CREATION TIME FOUND : %s", ctime(&b_time));
                 break;
             case 'S':
                 for(i = 0; i < 4; i++){
@@ -580,7 +579,6 @@ void deserialize_metadata(unsigned long int blknumber){
 
 void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int inode,char * data,FStree * node){
 	printf("WRITE_DATA CALLED\n");
-	//printf("\n******data file is :%s",node->path);
 	unsigned long int offset;
 	int x = sizeof(unsigned long int);
 	int d_block = find_data_block(node->inode_number);
@@ -665,14 +663,12 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 
 void serialize_filedata(unsigned long int inode,char * data,FStree * node){
     printf("SERIALIZE_FILEDATA CALLED\n");
-    //printf("\n******data file is :%s",node->path);
     write_data(data_fd, datamap, datamap_size, inode,data,node);
     return;
 }
 
 void serialize_filedata_wrapper(unsigned long int inode,char * data,FStree * node){
     printf("SERIALIZE_FILEDATA_WRAPPER CALLED\n");
-    //printf("\ninode :%lu and data:%s,and node:%s",inode,data,node->name);
     data_fd = open("fsdata", O_RDWR , 0644);
     serialize_filedata(inode,data,node);
     writebitmap(data_fd, datamap, datamap_size);
