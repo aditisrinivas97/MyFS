@@ -98,20 +98,26 @@ unsigned long int get_parent_block(int fd, FStree * node, int child_blocknumber)
     return parent_inode;
 }
 
-int update_node_wrapper(FStree * node){
+int update_node_wrapper(FStree * node, int mode){
     printf("UPDATE_NODE_WRAPPER CALLED\n");
     if(meta_fd < 0){
         meta_fd = open("fsmeta", O_RDWR , 0644);
     }
     lseek(meta_fd, (node->inode_number * BLOCK_SIZE), SEEK_SET);
-    update_node(meta_fd, metamap, metamap_size, node);
+    update_node(meta_fd, metamap, metamap_size, node, mode);
     return 0;
 }
 
-int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
+int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node, int mode){
     printf("UPDATE_NODE CALLED\n");
+    FSfile * getfile = NULL;
     clear_bit(&bitmap, node->inode_number);
     write_diskfile(fd, bitmap, bitmap_size, node);
+    if(mode && strcmp(node->type, "file") == 0){
+        getfile = find_file(node->path);
+        load_file(node->path, getfile->data);
+        serialize_filedata_wrapper(node->inode_number, getfile->data, node);
+    }
     writebitmap(meta_fd, metamap, metamap_size);
     return 0;
 }
@@ -598,7 +604,7 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 			write(fd, "\0\n", 2);
 			write(fd, CLOSE_MARKER, 2);
 			w_flag++;
-			update_node_wrapper(node);
+			update_node_wrapper(node, 0);
 			w_flag=0;
 		}
 		else {	
@@ -614,7 +620,7 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 			write(fd, "\0\n", 2);
 			write(fd, CLOSE_MARKER, 2);
 			w_flag=w_flag+1;
-			update_node_wrapper(node);
+			update_node_wrapper(node, 0);
 			if((strlen(data)-(512-x-13))!=0){
 				write_data(data_fd, datamap, datamap_size, inode,remain,node);
 			}
@@ -633,7 +639,7 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 			write(fd, "\0\n", 2);
 			write(fd, CLOSE_MARKER, 2);
 			w_flag++;
-			update_node_wrapper(node);
+			update_node_wrapper(node, 0);
 			w_flag=0;
 		}
 		else{	
@@ -649,7 +655,7 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 			write(fd, "\0\n", 2);
 			write(fd, CLOSE_MARKER, 2);
 			w_flag = w_flag + 1;
-			update_node_wrapper(node);
+			update_node_wrapper(node, 0);
 			if((strlen(data) - (512 - x - 13)) != 0){
 				write_data(data_fd, datamap, datamap_size, inode,remain,node);
 			}

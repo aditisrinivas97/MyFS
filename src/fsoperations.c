@@ -82,7 +82,7 @@ int do_mkdir(const char * path, mode_t x){
 	if(node != NULL){
 		serialize_metadata_wrapper(node);
 		if(node->parent != NULL){
-			update_node_wrapper(node->parent);
+			update_node_wrapper(node->parent, 0);
 		}
 	}
 	return 0;
@@ -104,7 +104,7 @@ int do_mknod(const char * path, mode_t x, dev_t y){
 	if(node != NULL){
 		serialize_metadata_wrapper(node);
 		if(node->parent != NULL){
-			update_node_wrapper(node->parent);
+			update_node_wrapper(node->parent, 0);
 		}
 	}
 	return 0;
@@ -241,7 +241,7 @@ int do_chmod(const char *path, mode_t new){
 	if(current != NULL){
 		current->c_time=time(NULL);
 		current->permissions = new;
-		//update_node_wrapper(current);
+		update_node_wrapper(current, 1);
 		return 0;
 	}
 	return -ENOENT;
@@ -335,13 +335,13 @@ int do_rename(const char* from, const char* to){
 		}
 		if(flag == 0){
 			delete_metadata_block(src->type,src->inode_number);
-			update_node_wrapper(src->parent);
+			update_node_wrapper(src->parent, 0);
 		}
 	
 		dst = search_node((char *)to);
 		serialize_metadata_wrapper(dst);
 		if(dst->parent != NULL){
-			update_node_wrapper(dst->parent);
+			update_node_wrapper(dst->parent, 0);
 		}
 		FSfile * my_file = find_file((char*)to);
 		serialize_filedata_wrapper(dst->inode_number,my_file->data,dst);

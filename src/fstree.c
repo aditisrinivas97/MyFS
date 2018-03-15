@@ -413,7 +413,7 @@ void delete_file(const char *path){
             parent_dir_node->fchildren = (FSfile **)realloc(parent_dir_node->fchildren,sizeof(FSfile *) * parent_dir_node->num_files);
         }
 		delete_metadata_block(typ,file_ino);
-		update_node_wrapper(parent_dir_node);
+		update_node_wrapper(parent_dir_node, 0);
 		free(del_file);
     }
 	return;
@@ -465,7 +465,7 @@ int delete_node(const char * path){
                 dir_node->parent->children = (FStree **)realloc(dir_node->parent->children,sizeof(FStree *) * dir_node->parent->num_children);
             }
 			delete_metadata_block(dir_node->type,dir_node->inode_number);
-			update_node_wrapper(dir_node->parent);
+			update_node_wrapper(dir_node->parent, 0);
 			free(dir_node);
             return 0;
         }

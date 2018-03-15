@@ -131,14 +131,14 @@ Gets the next metadata block number for chained data
 unsigned long int get_chained_meta_block(int fd, unsigned long int parent_blocknumber, unsigned long int child_blocknumber);
 
 /*
-Updates a given tree node, given by 'node' in the disk
+Updates a given tree node, given by 'node' in the disk and mode signifies that the datablocks should be updated as well
 */
-int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node);
+int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node, int mode);
 
 /*
-Wrapper function for update_node. Acts as an interface as the only parameter to this is the tree node 'node'
+Wrapper function for update_node. Acts as an interface as the only parameter to this is the tree node 'node' and mode signifies that the datablocks should be updated as well
 */
-int update_node_wrapper(FStree * node);
+int update_node_wrapper(FStree * node, int mode);
 
 /*
 Load the metadata from disk into memory starting at blocknumber 'blknumber' (usually the root block)
