@@ -29,6 +29,7 @@ int do_getattr(const char *path, struct stat *st){
 				file_node=find_file(path);
 			 	st->st_size = file_node->size;
 				st->st_blocks = (((st->st_size) / 512) + 1);
+				printf("\nblocks are :%ld",st->st_blocks);
 			}
 			else{
 				st->st_size = 0;
@@ -36,7 +37,6 @@ int do_getattr(const char *path, struct stat *st){
 			}
 		 }
 	 }
-	
 	st->st_nlink += dir_node->num_children;
 	st->st_mode = dir_node->permissions;
 	st->st_uid = dir_node->user_id; 
@@ -114,7 +114,7 @@ int do_mknod(const char * path, mode_t x, dev_t y){
 int do_open(const char *path, struct fuse_file_info *fi) {
 	printf("OPEN CALLED\n");
 	FStree * my_file_tree_node = search_node((char *)path);
-	FSfile * my_file = find_file(path);
+	//FSfile * my_file = find_file(path);
 	char * temp = deserialize_file_data(my_file_tree_node->inode_number);
 	if(temp != '\0'){
 		load_file(path,temp);
@@ -243,15 +243,14 @@ int do_chmod(const char *path, mode_t new){
 	if(current != NULL){
 		current->c_time=time(NULL);
 		current->permissions = new;
-		update_node_wrapper(current);
+		//update_node_wrapper(current);
 		return 0;
 	}
 	return -ENOENT;
 }
 
 int do_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi) {
-	printf("WRITE CALLED\n");
-	
+	printf("WRITE CALLED and path is :%s\n",path);
 	if(do_access(path,W_OK)!=0){
 		return -EACCES;
 	}
@@ -261,7 +260,11 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 	my_file = find_file(path);
 
 	if(my_file != NULL){
-		my_file_tree_node = search_node((char *)path);	
+		my_file_tree_node = search_node((char *)path);
+		my_file_tree_node->path = (char *)realloc(my_file_tree_node->path, sizeof(char) * strlen(path)+1);
+		strcpy(my_file_tree_node->path,path);
+		my_file_tree_node->path[strlen(my_file_tree_node->path)]='\0';
+		//printf("\n***sear node:%s",my_file_tree_node->path);	
 		my_file_tree_node->m_time = time(NULL);
 		my_file_tree_node->c_time = time(NULL);
 		my_file->data = (char *)realloc(my_file->data, sizeof(char) * (size + offset + 1));
@@ -269,9 +272,33 @@ int do_write(const char *path, const char *buf, size_t size, off_t offset, struc
 		memset((my_file->data) + offset, 0, size);
 		memcpy((my_file->data) + offset, buf, size);
 		my_file_tree_node->size = size + offset;
-		my_file->data[strlen(my_file->data)]='\0';
-		load_file(path,my_file->data);
-		serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
+		if(offset>0){
+			my_file->data[strlen(buf)+offset-1]='\0';	
+		}
+		else{
+			my_file->data[strlen(buf)]='\0';
+		}
+		int i, j=0, k, flag =0;
+		char sub [] = ".goutputstream";
+		for(i=0; path[i]; i++)
+		{
+			if(path[i] == sub[j])
+			{
+				for(k=i, j=0; path[k] && sub[j]; j++, k++)
+					if(path[k]!=sub[j])
+						break;
+				if(!sub[j]){
+					flag = 1;
+        			}
+			}
+		}
+		//load_file(path,my_file->data);
+		//printf("\n***sear node2:%s",my_file_tree_node->path);	
+		if(flag == 0){
+			//printf("\n***to be written:%s",my_file_tree_node->path);
+			serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
+		}
+		memset((char *)buf, 0, strlen(buf));
 		return size;
 	}
 	return -ENOENT;
@@ -297,6 +324,36 @@ int do_rename(const char* from, const char* to){
 		}
 	}
 	move_node(from,to);
+	if(strcmp(dst->type,"file")==0){
+		int i, j=0, k, flag =0;
+		char sub [] = "goutputstream";
+		for(i=0; from[i]; i++)
+		{
+			if(from[i] == sub[j])
+			{
+				for(k=i, j=0; from[k] && sub[j]; j++, k++)
+					if(from[k]!=sub[j])
+						break;
+				if(!sub[j]){
+					flag = 1;
+				}
+			}
+		}
+		if(flag == 0){
+			delete_metadata_block(src->type,src->inode_number);
+			update_node_wrapper(src->parent);
+		}
+	
+		dst = search_node((char *)to);
+		serialize_metadata_wrapper(dst);
+		if(dst->parent != NULL){
+			//printf("\nserialize\n");
+			update_node_wrapper(dst->parent);
+		}
+		FSfile * my_file = find_file((char*)to);
+		//printf("\nbefore ser dst name:%s****",dst->name);
+		serialize_filedata_wrapper(dst->inode_number,my_file->data,dst);
+	}
 	return 0;
 }
 
@@ -304,11 +361,15 @@ int do_truncate(const char *path, off_t size){
 	printf("TRUNCATE CALLED\n");
 	FSfile * my_file;
 	my_file = find_file(path);
+	FStree * my_file_tree_node;
+	my_file_tree_node = search_node((char *)path);
 	if(my_file != NULL){
 		if(size <= 0){
 			free(my_file->data);
 			my_file->data = (char *)calloc(1,sizeof(char));
 			my_file->size = 0;
+			load_file(path,my_file->data);
+			serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
 		}
 		else{
 			char *buf;
@@ -316,8 +377,11 @@ int do_truncate(const char *path, off_t size){
 			strncpy(buf, my_file->data, size);
 			free(my_file->data);
 			my_file->data = (char *)calloc(size + 1, sizeof(char));
+			my_file->data[strlen(my_file->data)-1]='\0';
 			strcpy(my_file->data,buf);
 			my_file->size=size;
+			load_file(path,my_file->data);
+			serialize_filedata_wrapper(my_file_tree_node->inode_number,my_file->data,my_file_tree_node);
 	
 		}
 		return 0;

@@ -118,6 +118,7 @@ int update_node(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
 
 void write_diskfile(int fd, uint8_t * bitmap, uint64_t bitmap_size, FStree * node){
     printf("WRITE_DISKFILE CALLED\n");
+    printf("\n******write file is :%s",node->path);
     int childnodes = 0;
     unsigned long int freeblock = find_free_block(bitmap, bitmap_size);
     unsigned long int offset = freeblock * BLOCK_SIZE;
@@ -579,6 +580,7 @@ void deserialize_metadata(unsigned long int blknumber){
 
 void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int inode,char * data,FStree * node){
 	printf("WRITE_DATA CALLED\n");
+	//printf("\n******data file is :%s",node->path);
 	unsigned long int offset;
 	int x = sizeof(unsigned long int);
 	int d_block = find_data_block(node->inode_number);
@@ -663,12 +665,14 @@ void write_data(int fd, uint8_t * bitmap, uint64_t bitmap_size,unsigned long int
 
 void serialize_filedata(unsigned long int inode,char * data,FStree * node){
     printf("SERIALIZE_FILEDATA CALLED\n");
+    //printf("\n******data file is :%s",node->path);
     write_data(data_fd, datamap, datamap_size, inode,data,node);
     return;
 }
 
 void serialize_filedata_wrapper(unsigned long int inode,char * data,FStree * node){
     printf("SERIALIZE_FILEDATA_WRAPPER CALLED\n");
+    //printf("\ninode :%lu and data:%s,and node:%s",inode,data,node->name);
     data_fd = open("fsdata", O_RDWR , 0644);
     serialize_filedata(inode,data,node);
     writebitmap(data_fd, datamap, datamap_size);
@@ -680,7 +684,7 @@ char * deserialize_file_data(unsigned long int inode){
 	char * data = (char *)calloc(sizeof(char), 1);
 	char * data1 = (char *)calloc(sizeof(char), 1);
 	char buffer[1] = {0};
-    int datalen=1;
+    	int datalen=1;
 	unsigned long int d_block = find_data_block(inode);
 	if(d_block==0){
 		return '\0';

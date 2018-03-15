@@ -28,6 +28,7 @@ char * extract_path(char ** copy_path){
     }
     retval = (char *)realloc(retval, sizeof(char) * (retlen + 1));
     retval[retlen] = '\0';
+    printf("\nreturned\n");
     return retval;
 }
 
@@ -103,8 +104,9 @@ FStree * search_node(char * path){
             flag = 0;
         }
     }
-    if(retval!=NULL)
+    if(retval!=NULL){
     	return retval;
+	}
 	return NULL;
 }
 
@@ -583,9 +585,9 @@ void move_node(const char * from,const char * to){
 		if(strcmp(dir_node->type,"directory")==0){
 			path_update(dir_node,temp_path);
 		}
-		update_node_wrapper(dir_node);
-		update_node_wrapper(parent_dir_node);
-		update_node_wrapper(to_parent_dir_node);
+		//update_node_wrapper(dir_node);
+		//update_node_wrapper(parent_dir_node);
+		//update_node_wrapper(to_parent_dir_node);
 	}		
 }
 
@@ -608,8 +610,8 @@ void path_update(FStree * dir_node,char * topath){
 			temp->fchildren[j]->path[strlen(temp->path)+strlen(temp->name)+1]='\0';
 		}
 		temp->children[i]->parent=dir_node;
-		update_node_wrapper(dir_node);
-		update_node_wrapper(temp->children[i]->parent);
+		//update_node_wrapper(dir_node);
+		//update_node_wrapper(temp->children[i]->parent);
 		path_update(temp->children[i],temp->path);
 	}
 }
