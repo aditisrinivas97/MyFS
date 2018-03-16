@@ -22,23 +22,6 @@ FUSE or File System in User Space module provides a "bridge" to the actual kerne
 
 ## Features
 
-The following system calls are implemented in this File System.
-
-1. mkdir     -   Create a directory.
-2. rmdir     -   Delete an empty directory.
-3. getattr   -   Return file attributes.
-4. readdir   -   Return one or more directory entries (struct dirent) to the caller. 
-5. mknod     -   Make a special (device) file, FIFO, or socket. 
-6. open      -   Open a file.
-7. read      -   Read size bytes from the given file into the buffer buf, beginning offset bytes into the file.
-8. write     -   Read size bytes from the given buffer buf to the file, beginning offset bytes into the file.
-9. unlink    -   Remove (delete) the given file.
-10. chmod    -   Change the mode (permissions) of the given object to the given new permissions.
-11. utimens  -   Update the last access time of the given object.
-12. access   -   Check file access permissions.
-13. truncate -   Change the size of a file.
-14. rename   -   Rename / move a file.
-
 The following operations are supported in this file system
 
 1. Create a directory.
@@ -46,7 +29,7 @@ The following operations are supported in this file system
 3. Create a file using touch, nano, gedit etc.
 4. Delete an existing file.
 5. Appending to and truncating a file.
-6. Change the permissions of a file.
+6. Change the permissions of a file or directory.
 7. Access, modified and status change time updates.
 8. Open and close a file.
 9. Read and write to files.
