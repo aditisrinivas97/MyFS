@@ -12,7 +12,7 @@ A filesystem in user space built using FUSE, a software interface for Unix-like 
 - [Features](https://github.com/aditisrinivas97/MyFS#Features)
 - [Installing Dependencies](https://github.com/aditisrinivas97/MyFS#Installing-Dependencies)
 - [Using this filesystem](https://github.com/aditisrinivas97/MyFS#Installing-Dependencies)
-- [Licence](https://github.com/aditisrinivas97/MyFS#Licence)
+- [License](https://github.com/aditisrinivas97/MyFS#License)
 - [Credits](https://github.com/aditisrinivas97/MyFS#Credits)
 
 
